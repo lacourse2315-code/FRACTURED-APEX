@@ -9,17 +9,25 @@ export interface StorageLike {
   removeItem(k: string): void;
 }
 
-const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === 'string');
-const isNonNegativeFinite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
+const isNonNegativeFinite = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
 export function isValidState(value: unknown): value is GameState {
   if (!value || typeof value !== 'object') return false;
   const s = value as Partial<GameState>;
   if (s.schemaVersion !== 1) return false;
   if (!s.profile || typeof s.profile.id !== 'string' || typeof s.profile.createdAt !== 'string') return false;
-  if (!s.campaign || typeof s.campaign.worldId !== 'string' || !Number.isInteger(s.campaign.stage) || s.campaign.stage < 1)
+  if (
+    !s.campaign ||
+    typeof s.campaign.worldId !== 'string' ||
+    !Number.isInteger(s.campaign.stage) ||
+    s.campaign.stage < 1
+  )
     return false;
-  if (!s.currencies || !isNonNegativeFinite(s.currencies.shards) || !isNonNegativeFinite(s.currencies.essence)) return false;
+  if (!s.currencies || !isNonNegativeFinite(s.currencies.shards) || !isNonNegativeFinite(s.currencies.essence))
+    return false;
   if (!isStringArray(s.inventory) || !isStringArray(s.companionIds) || !isStringArray(s.featureUnlocks)) return false;
   if (!s.equipped || typeof s.equipped !== 'object' || Array.isArray(s.equipped)) return false;
   if (s.selectedClassId !== null && typeof s.selectedClassId !== 'string') return false;
