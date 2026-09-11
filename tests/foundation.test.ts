@@ -55,9 +55,9 @@ describe('platform', () => {
 describe('persistence', () => {
   it('validates a legitimate schema and rejects malformed nested state', () => {
     expect(isValidState(createInitialState())).toBe(true);
-    expect(isValidState({ schemaVersion: 1, profile: {}, campaign: {}, currencies: {}, settings: {}, statistics: {} })).toBe(
-      false,
-    );
+    expect(
+      isValidState({ schemaVersion: 1, profile: {}, campaign: {}, currencies: {}, settings: {}, statistics: {} }),
+    ).toBe(false);
   });
   it('rejects unsupported versions at the migration entry point', () => {
     const future = { ...createInitialState(), schemaVersion: 2 };
