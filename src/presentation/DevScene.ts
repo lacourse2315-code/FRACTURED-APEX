@@ -2,8 +2,11 @@ import Phaser from 'phaser';
 import { FixedStepSimulation, type GameSpeed } from '../core/simulation';
 import type { GameState } from '../core/state';
 import { STRINGS } from '../shared/strings';
+import { bindTap } from './input';
+
 export class DevScene extends Phaser.Scene {
   private sim = new FixedStepSimulation();
+
   constructor(
     private readonly state: GameState,
     private readonly onSave: (s: GameState) => void,
@@ -11,6 +14,7 @@ export class DevScene extends Phaser.Scene {
     super('DevScene');
     this.sim.setSpeed(state.settings.speed);
   }
+
   create(): void {
     const { width: w, height: h } = this.scale;
     const g = this.add.graphics();
@@ -20,6 +24,7 @@ export class DevScene extends Phaser.Scene {
       g.fillStyle(0xffffff, 0.18 + (i % 4) * 0.08);
       g.fillCircle((i * 83) % w, (i * 47) % h, 1 + (i % 2));
     }
+
     this.add
       .text(w / 2, 24, STRINGS.title, { fontFamily: 'Arial', fontSize: '34px', fontStyle: 'bold', color: '#ffffff' })
       .setOrigin(0.5, 0);
@@ -36,6 +41,24 @@ export class DevScene extends Phaser.Scene {
         color: '#ffd778',
       })
       .setOrigin(1, 0);
+
+    const mute = this.add
+      .text(w - 28, 26, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, {
+        fontFamily: 'Arial',
+        fontSize: '14px',
+        backgroundColor: '#1b2343',
+        padding: { x: 14, y: 9 },
+        color: '#ffffff',
+      })
+      .setOrigin(1, 0);
+    bindTap(mute, () => {
+      this.state.settings.muted = !this.state.settings.muted;
+      this.sound.mute = this.state.settings.muted;
+      this.onSave(this.state);
+      this.scene.restart();
+    });
+    this.sound.mute = this.state.settings.muted;
+
     this.entity(w * 0.25, h * 0.48, 'HERO', 0x67d6ff);
     this.entity(w * 0.42, h * 0.55, 'COMPANION', 0xb281ff);
     this.entity(w * 0.73, h * 0.48, 'ENEMY', 0xff6b8b);
@@ -45,10 +68,12 @@ export class DevScene extends Phaser.Scene {
       `${STRINGS.shards}: ${this.state.currencies.shards}   ${STRINGS.essence}: ${this.state.currencies.essence}`,
       { fontFamily: 'Arial', fontSize: '16px', color: '#dbe7ff' },
     );
+
     this.makeSpeedButtons(w, h);
     this.makeNav(w, h);
     this.scale.on('resize', () => this.scene.restart());
   }
+
   private entity(x: number, y: number, label: string, color: number): void {
     const g = this.add.graphics();
     g.fillStyle(color, 0.9);
@@ -57,18 +82,17 @@ export class DevScene extends Phaser.Scene {
     g.strokeCircle(x, y, 42);
     this.add.text(x, y + 58, label, { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
   }
+
   private makeSpeedButtons(w: number, h: number): void {
     ([1, 2, 3] as GameSpeed[]).forEach((s, i) => {
-      const t = this.add
-        .text(w / 2 - 80 + i * 80, h - 116, `x${s}`, {
-          fontFamily: 'Arial',
-          fontSize: '18px',
-          backgroundColor: this.state.settings.speed === s ? '#5841a8' : '#1b2343',
-          padding: { x: 18, y: 10 },
-          color: '#fff',
-        })
-        .setInteractive({ useHandCursor: true });
-      t.on('pointerup', () => {
+      const t = this.add.text(w / 2 - 80 + i * 80, h - 116, `x${s}`, {
+        fontFamily: 'Arial',
+        fontSize: '18px',
+        backgroundColor: this.state.settings.speed === s ? '#5841a8' : '#1b2343',
+        padding: { x: 18, y: 10 },
+        color: '#fff',
+      });
+      bindTap(t, () => {
         this.state.settings.speed = s;
         this.sim.setSpeed(s);
         this.onSave(this.state);
@@ -76,6 +100,7 @@ export class DevScene extends Phaser.Scene {
       });
     });
   }
+
   private makeNav(w: number, h: number): void {
     const labels = [STRINGS.battle, STRINGS.hero, STRINGS.forge, STRINGS.companions, STRINGS.rifts, STRINGS.more];
     const cell = w / labels.length;
@@ -85,12 +110,14 @@ export class DevScene extends Phaser.Scene {
           fontFamily: 'Arial',
           fontSize: '14px',
           color: i === 0 ? '#fff' : '#9aa7c7',
+          backgroundColor: '#11182c',
+          padding: { x: 10, y: 9 },
         })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
-      if (i > 0) text.on('pointerup', () => this.showLocked(label));
+        .setOrigin(0.5);
+      if (i > 0) bindTap(text, () => this.showLocked(label));
     });
   }
+
   private showLocked(label: string): void {
     const { width: w, height: h } = this.scale;
     const t = this.add
@@ -105,6 +132,7 @@ export class DevScene extends Phaser.Scene {
       .setDepth(10);
     this.time.delayedCall(1300, () => t.destroy());
   }
+
   override update(_: number, delta: number): void {
     this.sim.advance(delta, (dt) => {
       this.state.statistics.totalSimulationMs += dt;
