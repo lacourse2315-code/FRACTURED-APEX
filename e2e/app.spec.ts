@@ -10,7 +10,7 @@ const sizes = [
   [667, 375],
 ] as const;
 
-test('loads, renders canvas, persists speed and survives malformed save', async ({ page }) => {
+test('loads, renders canvas, persists speed and survives malformed save', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
@@ -21,7 +21,13 @@ test('loads, renders canvas, persists speed and survives malformed save', async 
   expect(box).not.toBeNull();
 
   if (!box) return;
-  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * (604 / 720));
+  const x2X = box.x + box.width * (666 / 1280);
+  const x2Y = box.y + box.height * (623 / 720);
+  if (testInfo.project.name === 'phone-landscape') {
+    await page.touchscreen.tap(x2X, x2Y);
+  } else {
+    await page.mouse.click(x2X, x2Y);
+  }
 
   await expect
     .poll(async () =>
