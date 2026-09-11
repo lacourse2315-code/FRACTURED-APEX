@@ -1,0 +1,25 @@
+name: Format Once
+on:
+  push:
+    branches: [prd-01-foundation]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, 'style: prettier') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prd-01-foundation
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx prettier --write .
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "style: prettier PRD-01 sources"
+          git push origin HEAD:prd-01-foundation
