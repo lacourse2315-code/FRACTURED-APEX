@@ -105,7 +105,7 @@ export class DevScene extends Phaser.Scene {
       .setDepth(10);
     this.time.delayedCall(1300, () => t.destroy());
   }
-  update(_: number, delta: number): void {
+  override update(_: number, delta: number): void {
     this.sim.advance(delta, (dt) => {
       this.state.statistics.totalSimulationMs += dt;
     });
