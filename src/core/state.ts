@@ -17,6 +17,10 @@ export const createInitialState = (): GameState => ({
   selectedClassId: null,
   campaign: { worldId: 'dev-fracture', stage: 1 },
   currencies: { shards: 0, essence: 0 },
-  inventory: [], equipped: {}, companionIds: [], featureUnlocks: [],
-  settings: { muted: false, speed: 1 }, statistics: { totalSimulationMs: 0 }
+  inventory: [],
+  equipped: {},
+  companionIds: [],
+  featureUnlocks: [],
+  settings: { muted: false, speed: 1 },
+  statistics: { totalSimulationMs: 0 },
 });
