@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 type Snapshot = {
   status: string;
@@ -10,13 +10,31 @@ type Snapshot = {
   resolve: number;
   pyraCharge: number;
 };
-async function debug<T>(
-  page: import('@playwright/test').Page,
-  key: 'snapshot' | 'state' | 'power' | 'loot',
-): Promise<T> {
-  return page.evaluate((k) => (window as any).__FA_DEBUG__[k](), key);
+type BrowserState = {
+  equipped: { weapon: string | null };
+  settings: { speed: number };
+  statistics: { totalSimulationMs: number };
+};
+type LootView = { slot: string };
+type BrowserDebug = {
+  snapshot: () => Snapshot;
+  state: () => BrowserState;
+  power: () => number;
+  loot: () => LootView | null;
+};
+type DebugWindow = Window & { __FA_DEBUG__?: BrowserDebug };
+
+async function debug<T>(page: Page, key: keyof BrowserDebug): Promise<T> {
+  return page.evaluate((k) => {
+    const api = (window as DebugWindow).__FA_DEBUG__;
+    if (!api) throw new Error('FRACTURED APEX debug bridge unavailable');
+    if (k === 'snapshot') return api.snapshot();
+    if (k === 'state') return api.state();
+    if (k === 'power') return api.power();
+    return api.loot();
+  }, key) as Promise<T>;
 }
-async function logicalClick(page: import('@playwright/test').Page, x: number, y: number, touch = false) {
+async function logicalClick(page: Page, x: number, y: number, touch = false) {
   const canvas = page.locator('canvas');
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
@@ -26,7 +44,7 @@ async function logicalClick(page: import('@playwright/test').Page, x: number, y:
   if (touch) await page.touchscreen.tap(px, py);
   else await page.mouse.click(px, py);
 }
-async function waitStatus(page: import('@playwright/test').Page, status: string, timeout = 25_000) {
+async function waitStatus(page: Page, status: string, timeout = 25_000) {
   await expect.poll(async () => (await debug<Snapshot>(page, 'snapshot')).status, { timeout }).toBe(status);
 }
 
@@ -46,16 +64,16 @@ test.describe('real playable loop', () => {
       .poll(async () => (await debug<Snapshot>(page, 'snapshot')).pyraCharge, { timeout: 5000 })
       .toBeGreaterThan(0);
     await waitStatus(page, 'victory');
-    const loot = await debug<any>(page, 'loot');
-    expect(loot).toBeTruthy();
-    expect(loot.slot).toBe('weapon');
+    const loot = await debug<LootView | null>(page, 'loot');
+    expect(loot).not.toBeNull();
+    expect(loot?.slot).toBe('weapon');
     await logicalClick(page, 480, 439);
     await expect.poll(async () => debug<number>(page, 'power')).toBeGreaterThan(startPower);
-    const equippedId = await page.evaluate(() => (window as any).__FA_DEBUG__.state().equipped.weapon);
+    const equippedId = (await debug<BrowserState>(page, 'state')).equipped.weapon;
     expect(equippedId).toBeTruthy();
     await page.reload();
     await expect(page.locator('canvas')).toBeVisible();
-    expect(await page.evaluate(() => (window as any).__FA_DEBUG__.state().equipped.weapon)).toBe(equippedId);
+    expect((await debug<BrowserState>(page, 'state')).equipped.weapon).toBe(equippedId);
     expect(await debug<number>(page, 'power')).toBeGreaterThan(startPower);
     await logicalClick(page, 732, 608);
     await waitStatus(page, 'victory');
@@ -73,18 +91,18 @@ test.describe('real playable loop', () => {
   test('desktop: x2 and x3 increase authoritative simulation rate', async ({ page }) => {
     await page.goto('/');
     await logicalClick(page, 640, 608);
-    const a = await page.evaluate(() => (window as any).__FA_DEBUG__.state().statistics.totalSimulationMs);
+    const a = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
     await page.waitForTimeout(500);
-    const b = await page.evaluate(() => (window as any).__FA_DEBUG__.state().statistics.totalSimulationMs);
+    const b = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
     const x2Delta = b - a;
     await logicalClick(page, 732, 608);
-    const c = await page.evaluate(() => (window as any).__FA_DEBUG__.state().statistics.totalSimulationMs);
+    const c = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
     await page.waitForTimeout(500);
-    const d = await page.evaluate(() => (window as any).__FA_DEBUG__.state().statistics.totalSimulationMs);
+    const d = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
     const x3Delta = d - c;
     expect(x2Delta).toBeGreaterThan(650);
     expect(x3Delta).toBeGreaterThan(x2Delta * 1.2);
-    expect(await page.evaluate(() => (window as any).__FA_DEBUG__.state().settings.speed)).toBe(3);
+    expect((await debug<BrowserState>(page, 'state')).settings.speed).toBe(3);
   });
 
   test('phone landscape: touch speed control and automatic combat work', async ({ page }, testInfo) => {
