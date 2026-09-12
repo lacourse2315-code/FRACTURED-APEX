@@ -29,14 +29,8 @@ test.describe('PRD-02 iOS PWA support', () => {
       'content',
       'black-translucent',
     );
-    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
-      'content',
-      'FRACTURED APEX',
-    );
-    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
-      'href',
-      '/icons/apple-touch-icon.png',
-    );
+    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'FRACTURED APEX');
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png');
   });
 
   test('PWA icons are publicly served', async ({ request }) => {
