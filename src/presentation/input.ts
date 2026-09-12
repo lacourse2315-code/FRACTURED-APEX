@@ -9,6 +9,11 @@ type Touchable = Phaser.GameObjects.GameObject & {
 
 export function bindTap(target: Phaser.GameObjects.GameObject, action: TapAction): void {
   target.setInteractive({ useHandCursor: true });
+  const hitArea = target.input?.hitArea as { width?: number; height?: number } | undefined;
+  if (hitArea) {
+    if (typeof hitArea.width === 'number') hitArea.width = Math.max(hitArea.width, 112);
+    if (typeof hitArea.height === 'number') hitArea.height = Math.max(hitArea.height, 56);
+  }
   const touchable = target as Touchable;
   const pressed = () => {
     touchable.setScale?.(0.96);
