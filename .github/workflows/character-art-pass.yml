@@ -58,6 +58,7 @@ jobs:
               }
               await page.goto('/');
               await expect(page.locator('canvas')).toBeVisible();
+              await page.waitForFunction(() => !!window.__FA_DEBUG__);
               const visuals = await page.evaluate(() => window.__FA_DEBUG__?.visuals());
               expect(visuals?.renderer).toBe('sprite-combat-v2');
             });
@@ -72,10 +73,12 @@ jobs:
                 await page.setViewportSize(viewport);
                 await page.goto('/');
                 await expect(page.locator('canvas')).toBeVisible();
+                await page.waitForFunction(() => !!window.__FA_DEBUG__);
                 const layout = await page.evaluate(() => window.__FA_DEBUG__?.layout());
                 const visuals = await page.evaluate(() => window.__FA_DEBUG__?.visuals());
                 expect(visuals?.hero).toBe(true);
                 expect(visuals?.enemy).toBe(true);
+                expect(layout).toBeDefined();
                 expect(layout!.hud.left).toBeGreaterThanOrEqual(28);
                 expect(layout!.hud.right).toBeLessThanOrEqual(layout!.width - 28);
               });
@@ -85,7 +88,11 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           p=Path('e2e/visual-combat.spec.ts')
-          p.write_text(p.read_text().replace("renderer: 'vector-combat-v1'", "renderer: 'sprite-combat-v2'"))
+          s=p.read_text().replace("renderer: 'vector-combat-v1'", "renderer: 'sprite-combat-v2'")
+          needle="    await page.goto('/');\n\n    let after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());"
+          repl="    await page.goto('/');\n    await page.waitForFunction(() => !!window.__FA_DEBUG__);\n\n    let after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());"
+          s=s.replace(needle,repl)
+          p.write_text(s)
           PY
       - run: npx prettier --write src/presentation/DevScene.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
       - run: npm run format:check
