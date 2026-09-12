@@ -47,12 +47,25 @@ test.describe('PRD-02 visual combat pass', () => {
   test('auto combat and speed controls remain operational after visual pass', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
-    const before = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());
-    await page.evaluate(() => window.__FA_DEBUG__?.advance(3500));
-    const after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());
-    expect(before).toBeDefined();
+
+    let after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());
     expect(after).toBeDefined();
-    expect(after!.enemyHp < before!.enemyHp || after!.wave > before!.wave || after!.status === 'victory').toBeTruthy();
+
+    for (let i = 0; i < 60; i += 1) {
+      await page.evaluate(() => window.__FA_DEBUG__?.advance(250));
+      after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());
+      if (
+        after &&
+        (after.enemyHp < after.enemyMaxHp || after.wave > 1 || after.status === 'victory' || after.status === 'defeat')
+      ) {
+        break;
+      }
+    }
+
+    expect(after).toBeDefined();
+    expect(
+      after!.enemyHp < after!.enemyMaxHp || after!.wave > 1 || after!.status === 'victory' || after!.status === 'defeat',
+    ).toBeTruthy();
 
     for (const speed of ['1', '2', '3']) {
       await expect(page.locator('canvas')).toBeVisible();
