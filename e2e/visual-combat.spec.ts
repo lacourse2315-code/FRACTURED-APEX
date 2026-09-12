@@ -64,7 +64,10 @@ test.describe('PRD-02 visual combat pass', () => {
 
     expect(after).toBeDefined();
     expect(
-      after!.enemyHp < after!.enemyMaxHp || after!.wave > 1 || after!.status === 'victory' || after!.status === 'defeat',
+      after!.enemyHp < after!.enemyMaxHp ||
+        after!.wave > 1 ||
+        after!.status === 'victory' ||
+        after!.status === 'defeat',
     ).toBeTruthy();
 
     for (const speed of ['1', '2', '3']) {
