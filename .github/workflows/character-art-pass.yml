@@ -89,10 +89,16 @@ jobs:
           from pathlib import Path
           p=Path('e2e/visual-combat.spec.ts')
           s=p.read_text().replace("renderer: 'vector-combat-v1'", "renderer: 'sprite-combat-v2'")
-          needle="    await page.goto('/');\n\n    let after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());"
-          repl="    await page.goto('/');\n    await page.waitForFunction(() => !!window.__FA_DEBUG__);\n\n    let after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());"
-          s=s.replace(needle,repl)
-          p.write_text(s)
+          lines=s.splitlines()
+          out=[]
+          for i,line in enumerate(lines):
+            out.append(line)
+            if "await page.goto('/');" in line:
+              nxt=lines[i+1] if i+1 < len(lines) else ''
+              if 'waitForFunction' not in nxt:
+                indent=line[:len(line)-len(line.lstrip())]
+                out.append(indent + "await page.waitForFunction(() => !!window.__FA_DEBUG__);")
+          p.write_text('\n'.join(out)+'\n')
           PY
       - run: npx prettier --write src/presentation/DevScene.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
       - run: npm run format:check
