@@ -78,7 +78,9 @@ test.describe('PRD-02 iOS PWA support', () => {
       expect(layout!.hud.right).toBeLessThanOrEqual(layout!.width - 28);
       expect(layout!.hud.top).toBeGreaterThanOrEqual(18);
       expect(layout!.hud.bottom).toBeLessThanOrEqual(layout!.height - 18);
-      expect(layout!.hud.right - layout!.hud.left).toBeLessThanOrEqual((layout!.hud.bottom - layout!.hud.top) * (16 / 9) + 1);
+      expect(layout!.hud.right - layout!.hud.left).toBeLessThanOrEqual(
+        (layout!.hud.bottom - layout!.hud.top) * (16 / 9) + 1,
+      );
     });
   }
 
@@ -89,7 +91,9 @@ test.describe('PRD-02 iOS PWA support', () => {
     await expect(page.locator('#app')).toHaveCSS('visibility', 'hidden');
   });
 
-  test('stylesheet keeps edge-to-edge dynamic viewport sizing while exposing iOS safe-area variables', async ({ request }) => {
+  test('stylesheet keeps edge-to-edge dynamic viewport sizing while exposing iOS safe-area variables', async ({
+    request,
+  }) => {
     const response = await request.get('/src/style.css');
     expect(response.ok()).toBeTruthy();
     const css = await response.text();
