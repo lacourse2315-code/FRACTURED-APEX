@@ -1,7 +1,7 @@
 name: QA
 on:
   push:
-    branches: [main, prd-01-foundation]
+    branches: [main, prd-01-foundation, prd-02-playable-core]
   pull_request:
 jobs:
   qa:

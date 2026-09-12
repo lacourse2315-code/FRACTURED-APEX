@@ -4,20 +4,16 @@ import { developmentContent, validateContent } from './content/content';
 import { SaveRepository } from './persistence/persistence';
 import { DevScene } from './presentation/DevScene';
 import { DevelopmentPlatformProvider } from './platform/platform';
+
 const errors = validateContent(developmentContent);
 if (errors.length) throw new Error(`Content validation failed: ${errors.join('; ')}`);
-const platform = new DevelopmentPlatformProvider();
-void platform.capabilities();
+void new DevelopmentPlatformProvider().capabilities();
 const saves = new SaveRepository(window.localStorage);
 const state = saves.load();
-const scene = new DevScene(state, (s) => saves.save(s));
+const scene = new DevScene(state, (next) => saves.save(next));
 new Phaser.Game({
   type: Phaser.AUTO,
-  parent: 'app',
-  width: 1280,
-  height: 720,
-  backgroundColor: '#080b1d',
-  scene: [scene],
+  parent: 'app', width: 1280, height: 720, backgroundColor: '#080b1d', scene: [scene],
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 1280, height: 720 },
   render: { antialias: true },
 });
