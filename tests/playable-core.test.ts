@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  CombatEngine,
-  calculatePower,
-  calculateRiftwardenStats,
-  hitChance,
-  mitigate,
-  rollDamage,
-} from '../src/core/combat';
+import { CombatEngine, calculatePower, calculateRiftwardenStats, hitChance, mitigate, rollDamage } from '../src/core/combat';
 import { PlayableCore } from '../src/core/gameplay';
 import { comparisonDelta, equipItem, generateItem, itemScore, toggleItemLock } from '../src/core/loot';
 import { SeededRng, type RandomSource } from '../src/core/rng';
@@ -17,21 +10,13 @@ import { isValidState, migrate, SaveRepository, type StorageLike } from '../src/
 
 class MemoryStorage implements StorageLike {
   m = new Map<string, string>();
-  getItem(k: string) {
-    return this.m.get(k) ?? null;
-  }
-  setItem(k: string, v: string) {
-    this.m.set(k, v);
-  }
-  removeItem(k: string) {
-    this.m.delete(k);
-  }
+  getItem(k: string) { return this.m.get(k) ?? null; }
+  setItem(k: string, v: string) { this.m.set(k, v); }
+  removeItem(k: string) { this.m.delete(k); }
 }
 class SequenceRng implements RandomSource {
   constructor(private values: number[]) {}
-  next() {
-    return this.values.shift() ?? 0;
-  }
+  next() { return this.values.shift() ?? 0; }
 }
 function runCore(stage: number, seed = 1234) {
   const state = createInitialState();
@@ -102,11 +87,12 @@ describe('Riftwarden + Pyra combat loop', () => {
     const engine = new CombatEngine(state, developmentContent, new SeededRng(33));
     engine.start(1);
     let solar = false;
-    for (let i = 0; i < 1200 && engine.snapshot().status === 'fighting'; i++)
+    for (let i = 0; i < 1200 && engine.snapshot().status === 'fighting'; i++) {
       if (engine.tick(1000 / 60).some((e) => e.type === 'pyra' && e.label === 'Solar Pounce')) {
         solar = true;
         break;
       }
+    }
     expect(solar).toBe(true);
   });
   it('enemy archetypes have materially different profiles', () => {
@@ -118,8 +104,17 @@ describe('Riftwarden + Pyra combat loop', () => {
     expect(warden.stats.defense).toBeGreaterThan(skirmisher.stats.defense);
   });
   it('stage 1 reaches victory', () => expect(runCore(1).core.snapshot().status).toBe('victory'));
-  it('stage 3 can genuinely defeat an ungeared Riftwarden', () =>
-    expect(runCore(3).core.snapshot().status).toBe('defeat'));
+  it('stage 3 can genuinely defeat an ungeared Riftwarden', () => expect(runCore(3).core.snapshot().status).toBe('defeat'));
+  it('a cleared stage can be replayed without changing development-stage progress', () => {
+    const state = createInitialState();
+    const core = new PlayableCore(state, () => {}, 77);
+    while (core.snapshot().status === 'fighting') core.tick(1000 / 60);
+    expect(core.snapshot().status).toBe('victory');
+    core.keepPending();
+    core.replay();
+    expect(core.snapshot().status).toBe('fighting');
+    expect(state.campaign.stage).toBe(1);
+  });
 });
 
 describe('loot, equipment and Power', () => {
@@ -144,7 +139,7 @@ describe('loot, equipment and Power', () => {
     expect(afterPower).toBeGreaterThan(beforePower);
     expect(comparisonDelta(state, item)).toBe(0);
   });
-  it('replacement comparison and locking are authoritative', () => {
+  it('replacement comparison, replacement equip and locking are authoritative', () => {
     const state = createInitialState();
     const weak = generateItem(1, new SeededRng(2), () => 'weak', 'weapon');
     const strong = generateItem(3, new SeededRng(2), () => 'strong', 'weapon');
@@ -152,6 +147,8 @@ describe('loot, equipment and Power', () => {
     equipItem(state, weak.instanceId);
     expect(itemScore(strong)).toBeGreaterThan(itemScore(weak));
     expect(comparisonDelta(state, strong)).toBeGreaterThan(0);
+    equipItem(state, strong.instanceId);
+    expect(state.equipped.weapon).toBe('strong');
     toggleItemLock(state, strong.instanceId);
     expect(state.lockedItemIds).toContain('strong');
     toggleItemLock(state, strong.instanceId);

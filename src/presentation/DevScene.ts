@@ -11,6 +11,7 @@ interface DebugApi {
   state: () => GameState;
   power: () => number;
   loot: () => EquipmentItem | null;
+  advance: (realDeltaMs: number) => number;
 }
 declare global {
   interface Window {
@@ -37,6 +38,7 @@ export class DevScene extends Phaser.Scene {
   private keepButton!: Phaser.GameObjects.Text;
   private lockButton!: Phaser.GameObjects.Text;
   private nextButton!: Phaser.GameObjects.Text;
+  private replayButton!: Phaser.GameObjects.Text;
   private retryButton!: Phaser.GameObjects.Text;
   private floaters: Phaser.GameObjects.Text[] = [];
 
@@ -53,7 +55,12 @@ export class DevScene extends Phaser.Scene {
     const { width: w, height: h } = this.scale;
     this.drawBackdrop(w, h);
     this.add
-      .text(w / 2, 18, STRINGS.title, { fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: '#ffffff' })
+      .text(w / 2, 18, STRINGS.title, {
+        fontFamily: 'Arial',
+        fontSize: '30px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+      })
       .setOrigin(0.5, 0);
     this.add
       .text(w / 2, 52, STRINGS.subtitle, { fontFamily: 'Arial', fontSize: '12px', color: '#8fa9d8' })
@@ -70,13 +77,19 @@ export class DevScene extends Phaser.Scene {
     this.makeResultPanel(w, h);
     this.updateUi();
     this.scale.on('resize', () => this.scene.restart());
-    if (import.meta.env.DEV)
+    if (import.meta.env.DEV) {
       window.__FA_DEBUG__ = {
         snapshot: () => this.core.snapshot(),
         state: () => this.state,
         power: () => this.core.power(),
         loot: () => this.core.loot(),
+        advance: (realDeltaMs: number) => {
+          const before = this.state.statistics.totalSimulationMs;
+          this.sim.advance(realDeltaMs, (dt) => this.core.tick(dt));
+          return this.state.statistics.totalSimulationMs - before;
+        },
       };
+    }
   }
 
   override update(_: number, delta: number): void {
@@ -107,6 +120,7 @@ export class DevScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setRotation(-0.22);
   }
+
   private actor(x: number, y: number, label: string, color: number, radius = 42): void {
     const g = this.add.graphics();
     g.fillStyle(color, 0.92);
@@ -117,6 +131,7 @@ export class DevScene extends Phaser.Scene {
       .text(x, y + radius + 12, label, { fontFamily: 'Arial', fontSize: '13px', color: '#ffffff' })
       .setOrigin(0.5, 0);
   }
+
   private makeHud(w: number, h: number): void {
     this.heroHp = this.add.text(24, h * 0.24, '', { fontFamily: 'Arial', fontSize: '16px', color: '#8fffc1' });
     this.enemyHp = this.add
@@ -135,6 +150,7 @@ export class DevScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.resourcesText = this.add.text(24, h - 112, '', { fontFamily: 'Arial', fontSize: '14px', color: '#dbe7ff' });
   }
+
   private makeMute(w: number): void {
     const mute = this.add
       .text(w - 24, 52, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, {
@@ -153,6 +169,7 @@ export class DevScene extends Phaser.Scene {
     });
     this.sound.mute = this.state.settings.muted;
   }
+
   private makeSpeedButtons(w: number, h: number): void {
     ([1, 2, 3] as GameSpeed[]).forEach((speed, i) => {
       const t = this.add
@@ -172,6 +189,7 @@ export class DevScene extends Phaser.Scene {
       });
     });
   }
+
   private makeNav(w: number, h: number): void {
     const labels = [STRINGS.battle, STRINGS.hero, STRINGS.forge, STRINGS.companions, STRINGS.rifts, STRINGS.more];
     const cell = w / labels.length;
@@ -190,6 +208,7 @@ export class DevScene extends Phaser.Scene {
       else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, h));
     });
   }
+
   private makeResultPanel(w: number, h: number): void {
     this.resultText = this.add
       .text(w / 2, h * 0.18, '', {
@@ -224,14 +243,16 @@ export class DevScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(20);
-    this.equipButton = this.actionButton(w / 2 - 160, h * 0.61, 'EQUIP', () => this.core.equipPending());
-    this.lockButton = this.actionButton(w / 2 - 55, h * 0.61, 'LOCK', () => this.core.toggleLockPending());
-    this.keepButton = this.actionButton(w / 2 + 55, h * 0.61, 'KEEP', () => this.core.keepPending());
-    this.nextButton = this.actionButton(w / 2 + 165, h * 0.61, 'NEXT', () => this.core.nextStage());
+    this.equipButton = this.actionButton(w / 2 - 110, h * 0.61, 'EQUIP', () => this.core.equipPending());
+    this.lockButton = this.actionButton(w / 2, h * 0.61, 'LOCK', () => this.core.toggleLockPending());
+    this.keepButton = this.actionButton(w / 2 + 110, h * 0.61, 'KEEP', () => this.core.keepPending());
+    this.replayButton = this.actionButton(w / 2 - 70, h * 0.61, 'REPLAY', () => this.core.replay());
+    this.nextButton = this.actionButton(w / 2 + 70, h * 0.61, 'NEXT', () => this.core.nextStage());
     this.retryButton = this.actionButton(w / 2 - 65, h * 0.58, 'RETRY', () => this.core.retry());
     const hero = this.actionButton(w / 2 + 65, h * 0.58, 'HERO', () => this.showHeroPanel(w, h));
     hero.setName('defeat-hero');
   }
+
   private actionButton(x: number, y: number, label: string, action: () => void): Phaser.GameObjects.Text {
     const t = this.add
       .text(x, y, label, {
@@ -247,6 +268,7 @@ export class DevScene extends Phaser.Scene {
     bindTap(t, action);
     return t;
   }
+
   private showHeroPanel(w: number, h: number): void {
     const stats = this.core.stats();
     const gear = Object.entries(this.state.equipped)
@@ -273,6 +295,7 @@ export class DevScene extends Phaser.Scene {
       .setDepth(30);
     bindTap(t, () => t.destroy());
   }
+
   private updateUi(): void {
     const s = this.core.snapshot();
     this.stageText.setText(`${STRINGS.world}\nSTAGE ${s.stage} — WAVE ${Math.min(3, s.wave)}/3`);
@@ -292,6 +315,7 @@ export class DevScene extends Phaser.Scene {
       : null;
     const weaponColor = weapon?.rarity === 'rare' ? 0xd070ff : weapon?.rarity === 'uncommon' ? 0x69e49f : 0xb9e5ff;
     this.heroWeapon.setFillStyle(weaponColor).setSize(weapon ? 88 + weapon.itemLevel * 6 : 76, 10);
+
     const victory = s.status === 'victory';
     const defeat = s.status === 'defeat';
     const loot = this.core.loot();
@@ -302,12 +326,14 @@ export class DevScene extends Phaser.Scene {
     this.diagnosticText
       .setVisible(defeat)
       .setText(defeat ? `${s.diagnostic ?? 'BUILD CHECK'}\nImprove gear or retry the stage.` : '');
-    for (const button of [this.equipButton, this.lockButton, this.keepButton, this.nextButton])
-      button.setVisible(victory && !!loot);
+    for (const button of [this.equipButton, this.lockButton, this.keepButton]) button.setVisible(victory && !!loot);
+    this.replayButton.setVisible(victory && !loot);
+    this.nextButton.setVisible(victory && !loot);
     this.retryButton.setVisible(defeat);
     const defeatHero = this.children.getByName('defeat-hero') as Phaser.GameObjects.Text | null;
     defeatHero?.setVisible(defeat);
   }
+
   private formatLoot(item: EquipmentItem): string {
     const stats = [...Object.entries(item.primary), ...item.affixes.map((a) => [a.stat, a.value] as const)]
       .map(
@@ -319,18 +345,20 @@ export class DevScene extends Phaser.Scene {
     const locked = this.state.lockedItemIds.includes(item.instanceId) ? 'LOCKED • ' : '';
     return `LOOT FOUND\n${locked}${item.name.toUpperCase()}  [${item.rarity.toUpperCase()}]\n${item.slot.toUpperCase()} • ITEM LV ${item.itemLevel} • SCORE ${itemScore(item)}\n${stats}\nCOMPARE: ${delta >= 0 ? '+' : ''}${delta}`;
   }
+
   private presentEvent(event: ReturnType<PlayableCore['tick']>[number]): void {
-    if (event.type === 'damage' && event.amount)
+    if (event.type === 'damage' && event.amount) {
       this.floater(
         event.target === 'hero' ? 310 : 965,
         310,
         `${Math.round(event.amount)}${event.critical ? '!' : ''}`,
         event.target === 'hero' ? '#ff8a8a' : '#ffffff',
       );
-    if (event.type === 'shield' && event.amount)
-      this.floater(310, 350, `SHIELD ${Math.round(event.amount)}`, '#83c9ff');
+    }
+    if (event.type === 'shield' && event.amount) this.floater(310, 350, `SHIELD ${Math.round(event.amount)}`, '#83c9ff');
     if (event.type === 'pyra' && event.label) this.floater(520, 350, event.label, '#ffad67');
   }
+
   private floater(x: number, y: number, text: string, color: string): void {
     if (this.floaters.length >= 12) this.floaters.shift()?.destroy();
     const t = this.add
@@ -349,6 +377,7 @@ export class DevScene extends Phaser.Scene {
       },
     });
   }
+
   private toast(message: string, w: number, h: number): void {
     const t = this.add
       .text(w / 2, h * 0.72, message, {

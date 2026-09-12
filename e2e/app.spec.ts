@@ -11,6 +11,7 @@ type Snapshot = {
   pyraCharge: number;
 };
 type BrowserState = {
+  campaign: { stage: number };
   equipped: { weapon: string | null };
   settings: { speed: number };
   statistics: { totalSimulationMs: number };
@@ -21,10 +22,11 @@ type BrowserDebug = {
   state: () => BrowserState;
   power: () => number;
   loot: () => LootView | null;
+  advance: (realDeltaMs: number) => number;
 };
 type DebugWindow = Window & { __FA_DEBUG__?: BrowserDebug };
 
-async function debug<T>(page: Page, key: keyof BrowserDebug): Promise<T> {
+async function debug<T>(page: Page, key: 'snapshot' | 'state' | 'power' | 'loot'): Promise<T> {
   return page.evaluate((k) => {
     const api = (window as DebugWindow).__FA_DEBUG__;
     if (!api) throw new Error('FRACTURED APEX debug bridge unavailable');
@@ -34,6 +36,15 @@ async function debug<T>(page: Page, key: keyof BrowserDebug): Promise<T> {
     return api.loot();
   }, key) as Promise<T>;
 }
+
+async function advance(page: Page, realDeltaMs: number): Promise<number> {
+  return page.evaluate((delta) => {
+    const api = (window as DebugWindow).__FA_DEBUG__;
+    if (!api) throw new Error('FRACTURED APEX debug bridge unavailable');
+    return api.advance(delta);
+  }, realDeltaMs);
+}
+
 async function logicalClick(page: Page, x: number, y: number, touch = false) {
   const canvas = page.locator('canvas');
   const box = await canvas.boundingBox();
@@ -44,65 +55,91 @@ async function logicalClick(page: Page, x: number, y: number, touch = false) {
   if (touch) await page.touchscreen.tap(px, py);
   else await page.mouse.click(px, py);
 }
-async function waitStatus(page: Page, status: string, timeout = 25_000) {
-  await expect.poll(async () => (await debug<Snapshot>(page, 'snapshot')).status, { timeout }).toBe(status);
+
+async function waitSpeed(page: Page, speed: number) {
+  await expect.poll(async () => (await debug<BrowserState>(page, 'state')).settings.speed).toBe(speed);
+}
+
+async function driveToStatus(page: Page, status: 'victory' | 'defeat', maxIterations = 80) {
+  for (let i = 0; i < maxIterations; i++) {
+    const snapshot = await debug<Snapshot>(page, 'snapshot');
+    if (snapshot.status === status) return snapshot;
+    if (snapshot.status !== 'fighting') throw new Error(`Unexpected combat status ${snapshot.status}`);
+    await advance(page, 250);
+  }
+  throw new Error(`Combat did not reach ${status}`);
 }
 
 test.describe('real playable loop', () => {
-  test('desktop: auto combat → Pyra → loot → equip → stronger → reload → defeat → retry', async ({ page }) => {
+  test('desktop: auto combat → Pyra → loot → equip → continue → reload → defeat → retry', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop');
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/');
     await expect(page.locator('canvas')).toBeVisible();
-    const start = await debug<Snapshot>(page, 'snapshot');
     const startPower = await debug<number>(page, 'power');
+
     await logicalClick(page, 732, 608);
-    await expect
-      .poll(async () => (await debug<Snapshot>(page, 'snapshot')).enemyHp, { timeout: 5000 })
-      .toBeLessThan(start.enemyHp);
-    await expect
-      .poll(async () => (await debug<Snapshot>(page, 'snapshot')).pyraCharge, { timeout: 5000 })
-      .toBeGreaterThan(0);
-    await waitStatus(page, 'victory');
+    await waitSpeed(page, 3);
+    const combatStart = await debug<Snapshot>(page, 'snapshot');
+    await advance(page, 60);
+    const firstAction = await debug<Snapshot>(page, 'snapshot');
+    expect(firstAction.enemyHp).toBeLessThan(combatStart.enemyHp);
+    expect(firstAction.pyraCharge).toBeGreaterThan(0);
+
+    await driveToStatus(page, 'victory');
     const loot = await debug<LootView | null>(page, 'loot');
     expect(loot).not.toBeNull();
     expect(loot?.slot).toBe('weapon');
-    await logicalClick(page, 480, 439);
+    await logicalClick(page, 530, 439);
     await expect.poll(async () => debug<number>(page, 'power')).toBeGreaterThan(startPower);
     const equippedId = (await debug<BrowserState>(page, 'state')).equipped.weapon;
     expect(equippedId).toBeTruthy();
+
+    await logicalClick(page, 710, 439);
+    await expect.poll(async () => (await debug<BrowserState>(page, 'state')).campaign.stage).toBe(2);
     await page.reload();
     await expect(page.locator('canvas')).toBeVisible();
     expect((await debug<BrowserState>(page, 'state')).equipped.weapon).toBe(equippedId);
+    expect((await debug<BrowserState>(page, 'state')).campaign.stage).toBe(2);
     expect(await debug<number>(page, 'power')).toBeGreaterThan(startPower);
-    await logicalClick(page, 732, 608);
-    await waitStatus(page, 'victory');
-    await logicalClick(page, 805, 439);
-    await waitStatus(page, 'victory');
-    await logicalClick(page, 805, 439);
-    await waitStatus(page, 'defeat', 30_000);
-    const defeat = await debug<Snapshot>(page, 'snapshot');
+
+    await driveToStatus(page, 'victory');
+    await logicalClick(page, 750, 439);
+    await logicalClick(page, 710, 439);
+    await expect.poll(async () => (await debug<BrowserState>(page, 'state')).campaign.stage).toBe(3);
+    const defeat = await driveToStatus(page, 'defeat', 100);
     expect(defeat.heroHp).toBe(0);
     await logicalClick(page, 575, 418);
     await expect.poll(async () => (await debug<Snapshot>(page, 'snapshot')).status).toBe('fighting');
     expect(errors).toEqual([]);
   });
 
-  test('desktop: x2 and x3 increase authoritative simulation rate', async ({ page }) => {
+  test('desktop: x2 and x3 control authoritative fixed-step rate', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
     await logicalClick(page, 640, 608);
-    const a = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
-    await page.waitForTimeout(500);
-    const b = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
-    const x2Delta = b - a;
+    await waitSpeed(page, 2);
+    const x2Delta = await advance(page, 100);
     await logicalClick(page, 732, 608);
-    const c = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
-    await page.waitForTimeout(500);
-    const d = (await debug<BrowserState>(page, 'state')).statistics.totalSimulationMs;
-    const x3Delta = d - c;
-    expect(x2Delta).toBeGreaterThan(650);
-    expect(x3Delta).toBeGreaterThan(x2Delta * 1.2);
-    expect((await debug<BrowserState>(page, 'state')).settings.speed).toBe(3);
+    await waitSpeed(page, 3);
+    const x3Delta = await advance(page, 100);
+    expect(x2Delta).toBeGreaterThan(150);
+    expect(x3Delta).toBeGreaterThan(250);
+    expect(x3Delta).toBeGreaterThan(x2Delta * 1.25);
+  });
+
+  test('desktop: cleared stage can be replayed without a page reload', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop');
+    await page.goto('/');
+    await logicalClick(page, 732, 608);
+    await waitSpeed(page, 3);
+    await driveToStatus(page, 'victory');
+    await logicalClick(page, 750, 439);
+    await logicalClick(page, 570, 439);
+    const replay = await debug<Snapshot>(page, 'snapshot');
+    expect(replay.status).toBe('fighting');
+    expect(replay.stage).toBe(1);
   });
 
   test('phone landscape: touch speed control and automatic combat work', async ({ page }, testInfo) => {
@@ -111,12 +148,13 @@ test.describe('real playable loop', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/');
     await expect(page.locator('canvas')).toBeVisible();
-    const before = await debug<Snapshot>(page, 'snapshot');
     await logicalClick(page, 732, 608, true);
-    await expect
-      .poll(async () => (await debug<Snapshot>(page, 'snapshot')).enemyHp, { timeout: 6000 })
-      .toBeLessThan(before.enemyHp);
-    await expect.poll(async () => (await debug<Snapshot>(page, 'snapshot')).pyraCharge).toBeGreaterThan(0);
+    await waitSpeed(page, 3);
+    const before = await debug<Snapshot>(page, 'snapshot');
+    await advance(page, 60);
+    const after = await debug<Snapshot>(page, 'snapshot');
+    expect(after.enemyHp).toBeLessThan(before.enemyHp);
+    expect(after.pyraCharge).toBeGreaterThan(0);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
