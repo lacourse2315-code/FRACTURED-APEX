@@ -78,7 +78,7 @@ export class DevScene extends Phaser.Scene {
     this.makeActors(w, h);
     this.makeHud(w, h, hud.left, hud.right);
     this.makeSpeedButtons(w, h);
-    this.makeNav(h, hud.left, hud.right);
+    this.makeNav(w, h, hud.left, hud.right);
     this.makeResultPanel(w, h);
     this.updateUi();
     this.scale.on('resize', () => this.scene.restart());
@@ -222,7 +222,7 @@ export class DevScene extends Phaser.Scene {
     });
   }
 
-  private makeNav(h: number, hudLeft: number, hudRight: number): void {
+  private makeNav(w: number, h: number, hudLeft: number, hudRight: number): void {
     const labels = [STRINGS.battle, STRINGS.hero, STRINGS.forge, STRINGS.companions, STRINGS.rifts, STRINGS.more];
     const cell = (hudRight - hudLeft) / labels.length;
     labels.forEach((label, i) => {
@@ -236,8 +236,8 @@ export class DevScene extends Phaser.Scene {
         })
         .setOrigin(0.5)
         .setName(`nav-${label.toLowerCase()}`);
-      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel((hudLeft + hudRight) / 2, h));
-      else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, (hudLeft + hudRight) / 2, h));
+      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel(w, h));
+      else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, h));
     });
   }
 
