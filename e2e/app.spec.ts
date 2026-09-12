@@ -96,7 +96,7 @@ test.describe('real playable loop', () => {
     await expect(page.locator('canvas')).toBeVisible();
     const startPower = await debug<number>(page, 'power');
 
-    await logicalClick(page, 770, 608);
+    await logicalClick(page, 770, 630);
     await waitSpeed(page, 3);
     await waitForAutomaticCombatEvidence(page);
 
@@ -131,10 +131,10 @@ test.describe('real playable loop', () => {
   test('desktop: x2 and x3 control authoritative fixed-step rate', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
-    await logicalClick(page, 680, 608);
+    await logicalClick(page, 680, 630);
     await waitSpeed(page, 2);
     const x2Delta = await advance(page, 100);
-    await logicalClick(page, 770, 608);
+    await logicalClick(page, 770, 630);
     await waitSpeed(page, 3);
     const x3Delta = await advance(page, 100);
     expect(x2Delta).toBeGreaterThan(150);
@@ -145,7 +145,7 @@ test.describe('real playable loop', () => {
   test('desktop: cleared stage can be replayed without a page reload', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
-    await logicalClick(page, 770, 608);
+    await logicalClick(page, 770, 630);
     await waitSpeed(page, 3);
     await driveToStatus(page, 'victory');
     await logicalClick(page, 750, 439);
@@ -161,7 +161,7 @@ test.describe('real playable loop', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/');
     await expect(page.locator('canvas')).toBeVisible();
-    await logicalClick(page, 770, 608, true);
+    await logicalClick(page, 770, 630, true);
     await waitSpeed(page, 3);
     await waitForAutomaticCombatEvidence(page);
     expect(
