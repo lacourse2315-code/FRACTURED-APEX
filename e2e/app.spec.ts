@@ -71,7 +71,9 @@ async function driveToStatus(page: Page, status: 'victory' | 'defeat', maxIterat
 }
 
 test.describe('real playable loop', () => {
-  test('desktop: auto combat → Pyra → loot → equip → continue → reload → defeat → retry', async ({ page }, testInfo) => {
+  test('desktop: auto combat → Pyra → loot → equip → continue → reload → defeat → retry', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CombatEngine, calculatePower, calculateRiftwardenStats, hitChance, mitigate, rollDamage } from '../src/core/combat';
+import {
+  CombatEngine,
+  calculatePower,
+  calculateRiftwardenStats,
+  hitChance,
+  mitigate,
+  rollDamage,
+} from '../src/core/combat';
 import { PlayableCore } from '../src/core/gameplay';
 import { comparisonDelta, equipItem, generateItem, itemScore, toggleItemLock } from '../src/core/loot';
 import { SeededRng, type RandomSource } from '../src/core/rng';
@@ -10,13 +17,21 @@ import { isValidState, migrate, SaveRepository, type StorageLike } from '../src/
 
 class MemoryStorage implements StorageLike {
   m = new Map<string, string>();
-  getItem(k: string) { return this.m.get(k) ?? null; }
-  setItem(k: string, v: string) { this.m.set(k, v); }
-  removeItem(k: string) { this.m.delete(k); }
+  getItem(k: string) {
+    return this.m.get(k) ?? null;
+  }
+  setItem(k: string, v: string) {
+    this.m.set(k, v);
+  }
+  removeItem(k: string) {
+    this.m.delete(k);
+  }
 }
 class SequenceRng implements RandomSource {
   constructor(private values: number[]) {}
-  next() { return this.values.shift() ?? 0; }
+  next() {
+    return this.values.shift() ?? 0;
+  }
 }
 function runCore(stage: number, seed = 1234) {
   const state = createInitialState();
@@ -104,7 +119,8 @@ describe('Riftwarden + Pyra combat loop', () => {
     expect(warden.stats.defense).toBeGreaterThan(skirmisher.stats.defense);
   });
   it('stage 1 reaches victory', () => expect(runCore(1).core.snapshot().status).toBe('victory'));
-  it('stage 3 can genuinely defeat an ungeared Riftwarden', () => expect(runCore(3).core.snapshot().status).toBe('defeat'));
+  it('stage 3 can genuinely defeat an ungeared Riftwarden', () =>
+    expect(runCore(3).core.snapshot().status).toBe('defeat'));
   it('a cleared stage can be replayed without changing development-stage progress', () => {
     const state = createInitialState();
     const core = new PlayableCore(state, () => {}, 77);

@@ -355,7 +355,8 @@ export class DevScene extends Phaser.Scene {
         event.target === 'hero' ? '#ff8a8a' : '#ffffff',
       );
     }
-    if (event.type === 'shield' && event.amount) this.floater(310, 350, `SHIELD ${Math.round(event.amount)}`, '#83c9ff');
+    if (event.type === 'shield' && event.amount)
+      this.floater(310, 350, `SHIELD ${Math.round(event.amount)}`, '#83c9ff');
     if (event.type === 'pyra' && event.label) this.floater(520, 350, event.label, '#ffad67');
   }
 
