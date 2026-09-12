@@ -1,4 +1,8 @@
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   background: #050714;
 }
 
@@ -32,12 +36,9 @@ body {
 
 #app {
   position: fixed;
-  top: env(safe-area-inset-top, 0px);
-  right: 0;
-  bottom: env(safe-area-inset-bottom, 0px);
-  left: 0;
-  width: auto;
-  height: auto;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
   min-width: 0;
   min-height: 0;
   margin: 0;
@@ -57,14 +58,10 @@ body {
 
 @media (display-mode: standalone) and (orientation: landscape) {
   html,
-  body {
+  body,
+  #app {
     width: 100dvw;
     height: 100dvh;
-  }
-
-  #app {
-    right: 0;
-    left: 0;
   }
 }
 
@@ -75,7 +72,10 @@ body {
   z-index: 1000;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding-top: calc(32px + var(--safe-top));
+  padding-right: calc(32px + var(--safe-right));
+  padding-bottom: calc(32px + var(--safe-bottom));
+  padding-left: calc(32px + var(--safe-left));
   box-sizing: border-box;
   text-align: center;
   background: radial-gradient(circle at 50% 40%, #1b1552 0%, #07091d 60%, #03040d 100%);
