@@ -22,5 +22,3 @@ if (
 ) {
   throw new Error('Built PWA manifest does not match the PRD-02 iOS installation contract.');
 }
-
-console.log('PWA build assets verified.');
