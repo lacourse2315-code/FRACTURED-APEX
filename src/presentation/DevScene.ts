@@ -24,6 +24,7 @@ export class DevScene extends Phaser.Scene {
   private skillText!: Phaser.GameObjects.Text;
   private stageText!: Phaser.GameObjects.Text;
   private powerText!: Phaser.GameObjects.Text;
+  private resourcesText!: Phaser.GameObjects.Text;
   private resultText!: Phaser.GameObjects.Text;
   private lootText!: Phaser.GameObjects.Text;
   private diagnosticText!: Phaser.GameObjects.Text;
@@ -33,9 +34,7 @@ export class DevScene extends Phaser.Scene {
   private lockButton!: Phaser.GameObjects.Text;
   private nextButton!: Phaser.GameObjects.Text;
   private retryButton!: Phaser.GameObjects.Text;
-  private heroButton!: Phaser.GameObjects.Text;
   private floaters: Phaser.GameObjects.Text[] = [];
-  private lastStatus = '';
 
   constructor(private readonly state: GameState, private readonly onSave: (s: GameState) => void) {
     super('DevScene');
@@ -82,7 +81,7 @@ export class DevScene extends Phaser.Scene {
     this.resolveText = this.add.text(24, h * 0.3, '', { fontFamily: 'Arial', fontSize: '15px', color: '#bda4ff' });
     this.pyraText = this.add.text(24, h * 0.35, '', { fontFamily: 'Arial', fontSize: '14px', color: '#ffbd82' });
     this.skillText = this.add.text(w / 2, h * 0.69, '', { fontFamily: 'Arial', fontSize: '15px', color: '#dfe8ff', backgroundColor: '#11182ccc', padding: { x: 12, y: 8 } }).setOrigin(0.5);
-    this.add.text(24, h - 112, `${STRINGS.shards}: ${this.state.currencies.shards}`, { fontFamily: 'Arial', fontSize: '14px', color: '#dbe7ff' }).setName('resources');
+    this.resourcesText = this.add.text(24, h - 112, '', { fontFamily: 'Arial', fontSize: '14px', color: '#dbe7ff' });
   }
   private makeMute(w: number): void {
     const mute = this.add.text(w - 24, 52, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, { fontFamily: 'Arial', fontSize: '12px', backgroundColor: '#1b2343', padding: { x: 12, y: 8 }, color: '#fff' }).setOrigin(1, 0);
@@ -98,7 +97,7 @@ export class DevScene extends Phaser.Scene {
     const labels = [STRINGS.battle, STRINGS.hero, STRINGS.forge, STRINGS.companions, STRINGS.rifts, STRINGS.more]; const cell = w / labels.length;
     labels.forEach((label, i) => {
       const t = this.add.text(cell * i + cell / 2, h - 34, label, { fontFamily: 'Arial', fontSize: '13px', color: i < 2 ? '#fff' : '#9aa7c7', backgroundColor: '#11182c', padding: { x: 8, y: 8 } }).setOrigin(0.5).setName(`nav-${label.toLowerCase()}`);
-      if (label === STRINGS.hero) { this.heroButton = t; bindTap(t, () => this.showHeroPanel(w, h)); } else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, h));
+      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel(w, h)); else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, h));
     });
   }
   private makeResultPanel(w: number, h: number): void {
@@ -124,14 +123,14 @@ export class DevScene extends Phaser.Scene {
     const s = this.core.snapshot();
     this.stageText.setText(`${STRINGS.world}\nSTAGE ${s.stage} — WAVE ${Math.min(3, s.wave)}/3`); this.powerText.setText(`${STRINGS.power}\n${this.core.power()}`);
     this.heroHp.setText(`RIFTWARDEN  HP ${s.heroHp}/${s.heroMaxHp}${s.heroShield > 0 ? `  SHIELD ${s.heroShield}` : ''}`); this.enemyHp.setText(`${s.enemyName}\nHP ${s.enemyHp}/${s.enemyMaxHp}`);
-    this.resolveText.setText(`${STRINGS.resolve}: ${s.resolve}/100`); this.pyraText.setText(`${STRINGS.pyra}  •  SOLAR CHARGE ${s.pyraCharge}/3`); this.skillText.setText(`AUTO: ${s.currentSkill}`);
+    this.resolveText.setText(`${STRINGS.resolve}: ${s.resolve}/100`); this.pyraText.setText(`${STRINGS.pyra}  •  SOLAR CHARGE ${s.pyraCharge}/3`); this.skillText.setText(`AUTO: ${s.currentSkill}`); this.resourcesText.setText(`${STRINGS.shards}: ${this.state.currencies.shards}   ${STRINGS.essence}: ${this.state.currencies.essence}`);
     const weapon = this.state.equipped.weapon ? this.state.inventory.find((item) => item.instanceId === this.state.equipped.weapon) : null;
     const weaponColor = weapon?.rarity === 'rare' ? 0xd070ff : weapon?.rarity === 'uncommon' ? 0x69e49f : 0xb9e5ff; this.heroWeapon.setFillStyle(weaponColor).setSize(weapon ? 88 + weapon.itemLevel * 6 : 76, 10);
     const victory = s.status === 'victory'; const defeat = s.status === 'defeat'; const loot = this.core.loot();
     this.resultText.setVisible(victory || defeat).setText(victory ? 'VICTORY — FRACTURE STABILIZED' : defeat ? 'DEFEAT' : ''); this.lootText.setVisible(victory && !!loot).setText(loot ? this.formatLoot(loot) : '');
     this.diagnosticText.setVisible(defeat).setText(defeat ? `${s.diagnostic ?? 'BUILD CHECK'}\nImprove gear or retry the stage.` : '');
     for (const button of [this.equipButton, this.lockButton, this.keepButton, this.nextButton]) button.setVisible(victory && !!loot); this.retryButton.setVisible(defeat);
-    const defeatHero = this.children.getByName('defeat-hero') as Phaser.GameObjects.Text | null; defeatHero?.setVisible(defeat); if (this.lastStatus !== s.status) this.lastStatus = s.status;
+    const defeatHero = this.children.getByName('defeat-hero') as Phaser.GameObjects.Text | null; defeatHero?.setVisible(defeat);
   }
   private formatLoot(item: EquipmentItem): string {
     const stats = [...Object.entries(item.primary), ...item.affixes.map((a) => [a.stat, a.value] as const)].map(([stat, value]) => `${String(stat).toUpperCase()} +${typeof value === 'number' && value < 1 ? (value * 100).toFixed(1) + '%' : Number(value).toFixed(1)}`).join('   ');

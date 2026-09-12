@@ -1,4 +1,6 @@
 name: QA
+permissions:
+  contents: write
 on:
   push:
     branches: [main, prd-01-foundation, prd-02-playable-core]
@@ -11,5 +13,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm install
+      - name: Format PRD-02 source before validation
+        if: github.ref_name == 'prd-02-playable-core'
+        run: |
+          npm run format
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "style: format PRD-02 source"
+            git push
+          fi
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run qa
