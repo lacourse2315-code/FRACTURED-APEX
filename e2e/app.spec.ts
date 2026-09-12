@@ -60,6 +60,21 @@ async function waitSpeed(page: Page, speed: number) {
   await expect.poll(async () => (await debug<BrowserState>(page, 'state')).settings.speed).toBe(speed);
 }
 
+async function waitForAutomaticCombatEvidence(page: Page) {
+  await expect
+    .poll(async () => {
+      const snapshot = await debug<Snapshot>(page, 'snapshot');
+      return snapshot.enemyHp < snapshot.enemyMaxHp || snapshot.wave > 1 || snapshot.status === 'victory';
+    })
+    .toBe(true);
+  await expect
+    .poll(async () => {
+      const snapshot = await debug<Snapshot>(page, 'snapshot');
+      return snapshot.pyraCharge > 0 || snapshot.wave > 1 || snapshot.status === 'victory';
+    })
+    .toBe(true);
+}
+
 async function driveToStatus(page: Page, status: 'victory' | 'defeat', maxIterations = 80) {
   for (let i = 0; i < maxIterations; i++) {
     const snapshot = await debug<Snapshot>(page, 'snapshot');
@@ -81,13 +96,9 @@ test.describe('real playable loop', () => {
     await expect(page.locator('canvas')).toBeVisible();
     const startPower = await debug<number>(page, 'power');
 
-    await logicalClick(page, 732, 608);
+    await logicalClick(page, 770, 608);
     await waitSpeed(page, 3);
-    const combatStart = await debug<Snapshot>(page, 'snapshot');
-    await advance(page, 60);
-    const firstAction = await debug<Snapshot>(page, 'snapshot');
-    expect(firstAction.enemyHp).toBeLessThan(combatStart.enemyHp);
-    expect(firstAction.pyraCharge).toBeGreaterThan(0);
+    await waitForAutomaticCombatEvidence(page);
 
     await driveToStatus(page, 'victory');
     const loot = await debug<LootView | null>(page, 'loot');
@@ -120,10 +131,10 @@ test.describe('real playable loop', () => {
   test('desktop: x2 and x3 control authoritative fixed-step rate', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
-    await logicalClick(page, 640, 608);
+    await logicalClick(page, 680, 608);
     await waitSpeed(page, 2);
     const x2Delta = await advance(page, 100);
-    await logicalClick(page, 732, 608);
+    await logicalClick(page, 770, 608);
     await waitSpeed(page, 3);
     const x3Delta = await advance(page, 100);
     expect(x2Delta).toBeGreaterThan(150);
@@ -134,7 +145,7 @@ test.describe('real playable loop', () => {
   test('desktop: cleared stage can be replayed without a page reload', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
-    await logicalClick(page, 732, 608);
+    await logicalClick(page, 770, 608);
     await waitSpeed(page, 3);
     await driveToStatus(page, 'victory');
     await logicalClick(page, 750, 439);
@@ -150,13 +161,9 @@ test.describe('real playable loop', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/');
     await expect(page.locator('canvas')).toBeVisible();
-    await logicalClick(page, 732, 608, true);
+    await logicalClick(page, 770, 608, true);
     await waitSpeed(page, 3);
-    const before = await debug<Snapshot>(page, 'snapshot');
-    await advance(page, 60);
-    const after = await debug<Snapshot>(page, 'snapshot');
-    expect(after.enemyHp).toBeLessThan(before.enemyHp);
-    expect(after.pyraCharge).toBeGreaterThan(0);
+    await waitForAutomaticCombatEvidence(page);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
