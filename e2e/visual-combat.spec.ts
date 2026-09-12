@@ -4,11 +4,12 @@ test.describe('PRD-02 visual combat pass', () => {
   test('premium combat presentation replaces prototype actor circles', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
+    await page.waitForFunction(() => !!window.__FA_DEBUG__);
 
     await expect(page.locator('canvas')).toBeVisible();
     const visuals = await page.evaluate(() => window.__FA_DEBUG__?.visuals());
     expect(visuals).toEqual({
-      renderer: 'vector-combat-v1',
+      renderer: 'sprite-combat-v2',
       hero: true,
       pyra: true,
       enemy: true,
@@ -27,6 +28,7 @@ test.describe('PRD-02 visual combat pass', () => {
     test(`combat presentation stays inside safe HUD at ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('/');
+      await page.waitForFunction(() => !!window.__FA_DEBUG__);
       await expect(page.locator('canvas')).toBeVisible();
 
       const layout = await page.evaluate(() => window.__FA_DEBUG__?.layout());
@@ -47,6 +49,7 @@ test.describe('PRD-02 visual combat pass', () => {
   test('auto combat and speed controls remain operational after visual pass', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop');
     await page.goto('/');
+    await page.waitForFunction(() => !!window.__FA_DEBUG__);
 
     let after = await page.evaluate(() => window.__FA_DEBUG__?.snapshot());
     expect(after).toBeDefined();

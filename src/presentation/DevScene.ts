@@ -87,6 +87,11 @@ export class DevScene extends Phaser.Scene {
     this.core = new PlayableCore(state, onSave);
   }
 
+  preload(): void {
+    this.load.svg('riftwarden-art', '/art/riftwarden.svg');
+    this.load.svg('fracture-warden-art', '/art/fracture-warden.svg');
+  }
+
   create(): void {
     const { width: w, height: h } = this.scale;
     this.hud = this.hudBounds(w, h);
@@ -112,7 +117,7 @@ export class DevScene extends Phaser.Scene {
           return { width, height, hud: this.hudBounds(width, height), insets: this.safeInsets() };
         },
         visuals: () => ({
-          renderer: 'vector-combat-v1',
+          renderer: 'sprite-combat-v2',
           hero: this.heroActor?.active === true,
           pyra: this.pyraActor?.active === true,
           enemy: this.enemyActor?.active === true,
@@ -304,53 +309,10 @@ export class DevScene extends Phaser.Scene {
 
   private makeRiftwarden(x: number, y: number): Phaser.GameObjects.Container {
     const c = this.add.container(x, y).setDepth(5);
-    const shadow = this.add.ellipse(0, 86, 132, 24, 0x000000, 0.35);
-    const cloak = this.add.triangle(-20, 18, -54, -58, 4, -42, -24, 80, 0x10172f, 0.95);
-    const legL = this.add.rectangle(-28, 54, 28, 80, 0x182440).setStrokeStyle(3, 0x6684b0);
-    const legR = this.add.rectangle(20, 54, 28, 80, 0x182440).setStrokeStyle(3, 0x6684b0);
-    const body = this.add.polygon(
-      0,
-      -20,
-      [-58, -35, -38, -78, 0, -92, 42, -76, 58, -28, 36, 36, 0, 50, -38, 34],
-      0x18233e,
-    );
-    body.setStrokeStyle(4, 0x7894bf, 1);
-    const shoulderL = this.add.circle(-54, -48, 24, 0x26375d).setStrokeStyle(4, 0x8aa7d2);
-    const shoulderR = this.add.circle(52, -48, 24, 0x26375d).setStrokeStyle(4, 0x8aa7d2);
-    const helm = this.add.polygon(0, -112, [-34, -19, -24, -52, 0, -66, 28, -48, 36, -16, 20, 15, -22, 15], 0x17213a);
-    helm.setStrokeStyle(4, 0x91acd1);
-    const hornL = this.add.triangle(-28, -151, 0, 35, -24, -28, 8, 30, 0x213052).setStrokeStyle(2, 0x6f8cb8);
-    const hornR = this.add.triangle(28, -151, 0, 35, 24, -28, -8, 30, 0x213052).setStrokeStyle(2, 0x6f8cb8);
-    const visor = this.add.rectangle(0, -116, 48, 8, 0x8f68ff, 0.95);
-    const core = this.add.polygon(0, -36, [0, -13, 7, 0, 0, 13, -7, 0], 0x9d67ff, 0.9).setStrokeStyle(2, 0xe0d2ff);
-    const arm = this.add.rectangle(55, -2, 24, 82, 0x1b2948).setRotation(-0.32).setStrokeStyle(3, 0x718bb6);
-    const grip = this.add.rectangle(78, -23, 14, 64, 0x27395d).setRotation(-0.55);
-    const blade = this.add.polygon(118, -57, [-14, -80, 15, -80, 25, 70, 0, 94, -16, 68], 0x9bc4df);
-    blade.setRotation(-0.55).setStrokeStyle(3, 0xdff5ff);
-    const bladeRift = this.add.rectangle(116, -61, 6, 110, 0xa46cff, 0.9).setRotation(-0.55);
-    const crack1 = this.add.line(0, 0, -22, -58, 14, -62, 0xa56cff, 0.85).setLineWidth(3);
-    const crack2 = this.add.line(0, 0, 8, -16, 12, 25, 0x7651e8, 0.75).setLineWidth(2);
-    c.add([
-      shadow,
-      cloak,
-      legL,
-      legR,
-      body,
-      shoulderL,
-      shoulderR,
-      arm,
-      grip,
-      blade,
-      bladeRift,
-      helm,
-      hornL,
-      hornR,
-      visor,
-      core,
-      crack1,
-      crack2,
-    ]);
-    c.setScale(0.78);
+    const shadow = this.add.ellipse(0, 86, 150, 26, 0x000000, 0.34);
+    const sprite = this.add.image(0, -20, 'riftwarden-art').setName('riftwarden-sprite');
+    sprite.setDisplaySize(292, 292);
+    c.add([shadow, sprite]);
     return c;
   }
 
@@ -374,55 +336,10 @@ export class DevScene extends Phaser.Scene {
 
   private makeFractureWarden(x: number, y: number): Phaser.GameObjects.Container {
     const c = this.add.container(x, y).setDepth(5);
-    const shadow = this.add.ellipse(0, 88, 130, 24, 0x000000, 0.38);
-    const legL = this.add.rectangle(-26, 55, 30, 82, 0x291431).setStrokeStyle(3, 0x864b95);
-    const legR = this.add.rectangle(22, 55, 30, 82, 0x291431).setStrokeStyle(3, 0x864b95);
-    const body = this.add.polygon(
-      0,
-      -20,
-      [-60, -30, -42, -79, 0, -95, 43, -78, 60, -28, 37, 39, 0, 52, -38, 38],
-      0x28132f,
-    );
-    body.setStrokeStyle(4, 0xa25aab);
-    const shoulderL = this.add
-      .polygon(-54, -52, [-28, 8, -8, -26, 28, -18, 22, 18, -6, 28], 0x3d1b47)
-      .setStrokeStyle(3, 0xb565bf);
-    const shoulderR = this.add
-      .polygon(54, -52, [-28, -18, 8, -26, 28, 8, 6, 28, -22, 18], 0x3d1b47)
-      .setStrokeStyle(3, 0xb565bf);
-    const helm = this.add.polygon(0, -114, [-34, -18, -26, -52, 0, -69, 29, -49, 36, -14, 18, 16, -20, 16], 0x211027);
-    helm.setStrokeStyle(4, 0xb867c2);
-    const crystalL = this.add.triangle(-31, -155, 0, 44, -27, -24, 11, 24, 0xc33cff, 0.9).setStrokeStyle(2, 0xff5d9f);
-    const crystalR = this.add.triangle(31, -155, 0, 44, 27, -24, -11, 24, 0xc33cff, 0.9).setStrokeStyle(2, 0xff5d9f);
-    const visor = this.add.rectangle(0, -118, 48, 8, 0xff477b, 0.95);
-    const core = this.add.polygon(0, -34, [0, -14, 8, 0, 0, 14, -8, 0], 0xe245a5, 0.88).setStrokeStyle(2, 0xff9bc8);
-    const arm = this.add.rectangle(-56, -2, 24, 82, 0x35163e).setRotation(0.26).setStrokeStyle(3, 0x9551a4);
-    const glaiveGrip = this.add.rectangle(-83, -6, 12, 130, 0x4b2455).setRotation(0.16);
-    const glaive = this.add
-      .triangle(-104, -74, 0, 50, -50, -8, -2, -70, 0xd745a1, 0.9)
-      .setRotation(0.16)
-      .setStrokeStyle(3, 0xff79b5);
-    const crack1 = this.add.line(0, 0, -15, -56, -9, -14, 0xd346ff, 0.85).setLineWidth(3);
-    const crack2 = this.add.line(0, 0, 11, -17, 17, 28, 0xff477b, 0.8).setLineWidth(2);
-    c.add([
-      shadow,
-      legL,
-      legR,
-      body,
-      shoulderL,
-      shoulderR,
-      arm,
-      glaiveGrip,
-      glaive,
-      helm,
-      crystalL,
-      crystalR,
-      visor,
-      core,
-      crack1,
-      crack2,
-    ]);
-    c.setScale(0.78);
+    const shadow = this.add.ellipse(0, 88, 154, 26, 0x000000, 0.36);
+    const sprite = this.add.image(0, -18, 'fracture-warden-art').setName('fracture-warden-sprite');
+    sprite.setDisplaySize(304, 304);
+    c.add([shadow, sprite]);
     return c;
   }
 

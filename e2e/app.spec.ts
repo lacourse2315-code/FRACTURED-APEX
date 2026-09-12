@@ -48,6 +48,7 @@ async function advance(page: Page, realDeltaMs: number): Promise<number> {
 }
 
 async function logicalClick(page: Page, x: number, y: number, touch = false) {
+  await page.waitForFunction(() => !!(window as DebugWindow).__FA_DEBUG__);
   const canvas = page.locator('canvas');
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
