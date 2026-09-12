@@ -148,6 +148,8 @@ test.describe('real playable loop', () => {
     await page.goto('/');
     await driveToStatus(page, 'victory');
     await logicalClick(page, 750, 439);
+    await expect.poll(async () => debug<LootView | null>(page, 'loot')).toBeNull();
+    await logicalClick(page, 570, 439);
     await expect.poll(async () => (await debug<Snapshot>(page, 'snapshot')).status).toBe('fighting');
   });
 
