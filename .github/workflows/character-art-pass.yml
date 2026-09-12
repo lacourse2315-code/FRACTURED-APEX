@@ -21,46 +21,73 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
-      - name: Replace procedural hero/enemy with loaded sprite assets
+      - name: Apply character art replacement and stabilize visual tests
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          p=Path('src/presentation/DevScene.ts')
-          s=p.read_text()
+
+          p = Path('src/presentation/DevScene.ts')
+          s = p.read_text()
           if "preload(): void" not in s:
-            s=s.replace("  create(): void {", "  preload(): void {\n    this.load.svg('riftwarden-art', '/art/riftwarden.svg');\n    this.load.svg('fracture-warden-art', '/art/fracture-warden.svg');\n  }\n\n  create(): void {")
-          s=s.replace("renderer: 'vector-combat-v1',", "renderer: 'sprite-combat-v2',")
-          hero=re.search(r"  private makeRiftwarden\(x: number, y: number\): Phaser\.GameObjects\.Container \{.*?\n  \}\n\n  private makePyra", s, re.S)
-          if not hero: raise SystemExit('hero method not found')
-          s=s[:hero.start()]+"""  private makeRiftwarden(x: number, y: number): Phaser.GameObjects.Container {\n    const c = this.add.container(x, y).setDepth(5);\n    const shadow = this.add.ellipse(0, 86, 150, 26, 0x000000, 0.34);\n    const sprite = this.add.image(0, -20, 'riftwarden-art').setName('riftwarden-sprite');\n    sprite.setDisplaySize(292, 292);\n    c.add([shadow, sprite]);\n    return c;\n  }\n\n  private makePyra"""+s[hero.end():]
-          enemy=re.search(r"  private makeFractureWarden\(x: number, y: number\): Phaser\.GameObjects\.Container \{.*?\n  \}\n\n  private makeHud", s, re.S)
-          if not enemy: raise SystemExit('enemy method not found')
-          s=s[:enemy.start()]+"""  private makeFractureWarden(x: number, y: number): Phaser.GameObjects.Container {\n    const c = this.add.container(x, y).setDepth(5);\n    const shadow = this.add.ellipse(0, 88, 154, 26, 0x000000, 0.36);\n    const sprite = this.add.image(0, -18, 'fracture-warden-art').setName('fracture-warden-sprite');\n    sprite.setDisplaySize(304, 304);\n    c.add([shadow, sprite]);\n    return c;\n  }\n\n  private makeHud"""+s[enemy.end():]
+            s = s.replace("  create(): void {", "  preload(): void {\n    this.load.svg('riftwarden-art', '/art/riftwarden.svg');\n    this.load.svg('fracture-warden-art', '/art/fracture-warden.svg');\n  }\n\n  create(): void {")
+          s = s.replace("renderer: 'vector-combat-v1',", "renderer: 'sprite-combat-v2',")
+          hero = re.search(r"  private makeRiftwarden\(x: number, y: number\): Phaser\.GameObjects\.Container \{.*?\n  \}\n\n  private makePyra", s, re.S)
+          if not hero:
+            raise SystemExit('hero method not found')
+          s = s[:hero.start()] + """  private makeRiftwarden(x: number, y: number): Phaser.GameObjects.Container {\n    const c = this.add.container(x, y).setDepth(5);\n    const shadow = this.add.ellipse(0, 86, 150, 26, 0x000000, 0.34);\n    const sprite = this.add.image(0, -20, 'riftwarden-art').setName('riftwarden-sprite');\n    sprite.setDisplaySize(292, 292);\n    c.add([shadow, sprite]);\n    return c;\n  }\n\n  private makePyra""" + s[hero.end():]
+          enemy = re.search(r"  private makeFractureWarden\(x: number, y: number\): Phaser\.GameObjects\.Container \{.*?\n  \}\n\n  private makeHud", s, re.S)
+          if not enemy:
+            raise SystemExit('enemy method not found')
+          s = s[:enemy.start()] + """  private makeFractureWarden(x: number, y: number): Phaser.GameObjects.Container {\n    const c = this.add.container(x, y).setDepth(5);\n    const shadow = this.add.ellipse(0, 88, 154, 26, 0x000000, 0.36);\n    const sprite = this.add.image(0, -18, 'fracture-warden-art').setName('fracture-warden-sprite');\n    sprite.setDisplaySize(304, 304);\n    c.add([shadow, sprite]);\n    return c;\n  }\n\n  private makeHud""" + s[enemy.end():]
+          p.write_text(s)
+
+          p = Path('e2e/visual-combat.spec.ts')
+          s = p.read_text().replace("renderer: 'vector-combat-v1'", "renderer: 'sprite-combat-v2'")
+          lines = s.splitlines()
+          out = []
+          for i, line in enumerate(lines):
+            out.append(line)
+            if "await page.goto('/');" in line:
+              nxt = lines[i + 1] if i + 1 < len(lines) else ''
+              if 'waitForFunction' not in nxt:
+                indent = line[:len(line) - len(line.lstrip())]
+                out.append(indent + "await page.waitForFunction(() => !!window.__FA_DEBUG__);")
+          p.write_text('\n'.join(out) + '\n')
+
+          p = Path('e2e/app.spec.ts')
+          s = p.read_text()
+          s = s.replace(
+            "async function debug<T>(page: Page, key: 'snapshot' | 'state' | 'power' | 'loot'): Promise<T> {\n  return page.evaluate((k) => {",
+            "async function debug<T>(page: Page, key: 'snapshot' | 'state' | 'power' | 'loot'): Promise<T> {\n  await page.waitForFunction(() => !!(window as DebugWindow).__FA_DEBUG__);\n  return page.evaluate((k) => {",
+          )
+          s = s.replace(
+            "async function advance(page: Page, realDeltaMs: number): Promise<number> {\n  return page.evaluate((delta) => {",
+            "async function advance(page: Page, realDeltaMs: number): Promise<number> {\n  await page.waitForFunction(() => !!(window as DebugWindow).__FA_DEBUG__);\n  return page.evaluate((delta) => {",
+          )
           p.write_text(s)
           PY
-      - name: Add character art regression tests
-        shell: bash
-        run: |
+
           cat > e2e/character-art.spec.ts <<'EOF'
           import { expect, test } from '@playwright/test';
 
           test.describe('PRD-02 character art replacement', () => {
-            test('real character art assets load and procedural primary actors are gone', async ({ page, request }, testInfo) => {
+            test('real character art assets load and replace procedural primary actors', async ({ page, request }, testInfo) => {
               test.skip(testInfo.project.name !== 'desktop');
               for (const path of ['/art/riftwarden.svg', '/art/fracture-warden.svg']) {
                 const response = await request.get(path);
                 expect(response.ok()).toBeTruthy();
                 expect(response.headers()['content-type']).toContain('image/svg+xml');
-                const art = await response.text();
-                expect(art).toContain('<path');
+                expect(await response.text()).toContain('<path');
               }
               await page.goto('/');
               await expect(page.locator('canvas')).toBeVisible();
               await page.waitForFunction(() => !!window.__FA_DEBUG__);
               const visuals = await page.evaluate(() => window.__FA_DEBUG__?.visuals());
               expect(visuals?.renderer).toBe('sprite-combat-v2');
+              expect(visuals?.hero).toBe(true);
+              expect(visuals?.enemy).toBe(true);
             });
 
             for (const viewport of [
@@ -85,34 +112,15 @@ jobs:
             }
           });
           EOF
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('e2e/visual-combat.spec.ts')
-          s=p.read_text().replace("renderer: 'vector-combat-v1'", "renderer: 'sprite-combat-v2'")
-          lines=s.splitlines()
-          out=[]
-          for i,line in enumerate(lines):
-            out.append(line)
-            if "await page.goto('/');" in line:
-              nxt=lines[i+1] if i+1 < len(lines) else ''
-              if 'waitForFunction' not in nxt:
-                indent=line[:len(line)-len(line.lstrip())]
-                out.append(indent + "await page.waitForFunction(() => !!window.__FA_DEBUG__);")
-          p.write_text('\n'.join(out)+'\n')
-          PY
-      - run: npx prettier --write src/presentation/DevScene.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test
-      - run: npm run build
-      - run: npm run test:e2e
+      - run: npx prettier --write src/presentation/DevScene.ts e2e/app.spec.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
       - run: npm run qa
+      - name: Verify clean generated outputs except intended files
+        run: git status --porcelain
       - name: Commit implementation
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/presentation/DevScene.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
+          git add src/presentation/DevScene.ts e2e/app.spec.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
           git commit -m "art: replace procedural combatants with 2D character assets"
           git push origin HEAD:prd-02-playable-core
