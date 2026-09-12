@@ -67,7 +67,15 @@ const BASE_RIFTWARDEN: CombatStats = {
   cooldownRecovery: 0,
 };
 const statKeys: StatKey[] = [
-  'maxHp', 'attack', 'defense', 'attackSpeed', 'critChance', 'critDamage', 'accuracy', 'dodge', 'cooldownRecovery',
+  'maxHp',
+  'attack',
+  'defense',
+  'attackSpeed',
+  'critChance',
+  'critDamage',
+  'accuracy',
+  'dodge',
+  'cooldownRecovery',
 ];
 
 export function calculateRiftwardenStats(state: GameState): CombatStats {
@@ -86,15 +94,29 @@ function applyItem(stats: CombatStats, item: EquipmentItem): void {
 }
 function roundStats(stats: CombatStats): CombatStats {
   return {
-    maxHp: Math.round(stats.maxHp), attack: Number(stats.attack.toFixed(2)), defense: Number(stats.defense.toFixed(2)),
-    attackSpeed: Number(stats.attackSpeed.toFixed(3)), critChance: Number(stats.critChance.toFixed(4)),
-    critDamage: Number(stats.critDamage.toFixed(3)), accuracy: Number(stats.accuracy.toFixed(2)),
-    dodge: Number(stats.dodge.toFixed(2)), cooldownRecovery: Number(stats.cooldownRecovery.toFixed(4)),
+    maxHp: Math.round(stats.maxHp),
+    attack: Number(stats.attack.toFixed(2)),
+    defense: Number(stats.defense.toFixed(2)),
+    attackSpeed: Number(stats.attackSpeed.toFixed(3)),
+    critChance: Number(stats.critChance.toFixed(4)),
+    critDamage: Number(stats.critDamage.toFixed(3)),
+    accuracy: Number(stats.accuracy.toFixed(2)),
+    dodge: Number(stats.dodge.toFixed(2)),
+    cooldownRecovery: Number(stats.cooldownRecovery.toFixed(4)),
   };
 }
 export function calculatePower(stats: CombatStats): number {
-  return Math.round(stats.maxHp * 0.15 + stats.attack * 3.4 + stats.defense * 2.2 + stats.attackSpeed * 180 +
-    stats.critChance * 900 + (stats.critDamage - 1) * 160 + stats.accuracy * 0.8 + stats.dodge * 2.2 + stats.cooldownRecovery * 500);
+  return Math.round(
+    stats.maxHp * 0.15 +
+      stats.attack * 3.4 +
+      stats.defense * 2.2 +
+      stats.attackSpeed * 180 +
+      stats.critChance * 900 +
+      (stats.critDamage - 1) * 160 +
+      stats.accuracy * 0.8 +
+      stats.dodge * 2.2 +
+      stats.cooldownRecovery * 500,
+  );
 }
 export function hitChance(attacker: CombatStats, defender: CombatStats): number {
   return Math.max(0.55, Math.min(0.99, 0.9 + (attacker.accuracy - defender.dodge * 2) / 500));
@@ -102,13 +124,22 @@ export function hitChance(attacker: CombatStats, defender: CombatStats): number 
 export function mitigate(raw: number, defense: number): number {
   return raw * (100 / (100 + Math.max(0, defense)));
 }
-export function rollDamage(attacker: CombatStats, defender: CombatStats, multiplier: number, rng: RandomSource): { damage: number; critical: boolean; hit: boolean } {
+export function rollDamage(
+  attacker: CombatStats,
+  defender: CombatStats,
+  multiplier: number,
+  rng: RandomSource,
+): { damage: number; critical: boolean; hit: boolean } {
   if (rng.next() > hitChance(attacker, defender)) return { damage: 0, critical: false, hit: false };
   const critical = rng.next() < attacker.critChance;
   const raw = attacker.attack * multiplier * (critical ? attacker.critDamage : 1);
   return { damage: Math.max(1, Math.round(mitigate(raw, defender.defense))), critical, hit: true };
 }
-interface RuntimeActor { hp: number; shield: number; stats: CombatStats; }
+interface RuntimeActor {
+  hp: number;
+  shield: number;
+  stats: CombatStats;
+}
 
 export class CombatEngine {
   private status: CombatStatus = 'idle';
@@ -127,7 +158,11 @@ export class CombatEngine {
   private damageDone = 0;
   private currentSkill = 'Rift Cleaver';
   private events: CombatEvent[] = [];
-  constructor(private readonly state: GameState, private readonly content: CombatContent, private readonly rng: RandomSource) {}
+  constructor(
+    private readonly state: GameState,
+    private readonly content: CombatContent,
+    private readonly rng: RandomSource,
+  ) {}
 
   start(stageNumber = this.state.campaign.stage): void {
     const stage = this.content.stages.find((s) => s.stage === stageNumber);
@@ -148,7 +183,8 @@ export class CombatEngine {
     this.events = [];
     if (this.status !== 'fighting') return this.events;
     const dt = Math.max(0, Math.min(dtMs, 250));
-    for (const key of Object.keys(this.cooldowns) as Array<keyof typeof this.cooldowns>) this.cooldowns[key] = Math.max(0, this.cooldowns[key] - dt);
+    for (const key of Object.keys(this.cooldowns) as Array<keyof typeof this.cooldowns>)
+      this.cooldowns[key] = Math.max(0, this.cooldowns[key] - dt);
     this.heroAttackTimer -= dt;
     this.enemyAttackTimer -= dt;
     this.pyraTimer -= dt;
@@ -173,7 +209,8 @@ export class CombatEngine {
       enemyName: this.enemyDef?.name ?? '',
       pyraCharge: this.pyraCharge,
       currentSkill: this.currentSkill,
-      diagnostic: this.status === 'defeat' ? (this.damageTaken > this.damageDone * 1.2 ? 'SURVIVAL LOW' : 'DAMAGE LOW') : null,
+      diagnostic:
+        this.status === 'defeat' ? (this.damageTaken > this.damageDone * 1.2 ? 'SURVIVAL LOW' : 'DAMAGE LOW') : null,
     };
   }
   private heroAction(): void {
@@ -213,7 +250,12 @@ export class CombatEngine {
     this.heroAttackTimer = 720;
   }
   private pyraAction(): void {
-    const pyraStats: CombatStats = { ...this.hero.stats, attack: Math.round(this.hero.stats.attack * 0.38 + 18), critChance: 0.12, critDamage: 1.5 };
+    const pyraStats: CombatStats = {
+      ...this.hero.stats,
+      attack: Math.round(this.hero.stats.attack * 0.38 + 18),
+      critChance: 0.12,
+      critDamage: 1.5,
+    };
     if (this.pyraCharge >= 3) {
       this.pyraCharge -= 3;
       const result = rollDamage(pyraStats, this.enemy.stats, 1.8, this.rng);
@@ -234,7 +276,8 @@ export class CombatEngine {
     }[this.enemyDef.archetype];
     const result = rollDamage(this.enemy.stats, this.hero.stats, attack.multiplier, this.rng);
     if (result.hit) this.applyHeroDamage(result.damage, result.critical, attack.label);
-    this.enemyAttackTimer = (1000 / Math.max(0.25, this.enemy.stats.attackSpeed)) * (this.enemyDef.archetype === 'skirmisher' ? 0.82 : 1);
+    this.enemyAttackTimer =
+      (1000 / Math.max(0.25, this.enemy.stats.attackSpeed)) * (this.enemyDef.archetype === 'skirmisher' ? 0.82 : 1);
   }
   private damageEnemy(source: 'hero' | 'pyra', multiplier: number, label: string): void {
     const result = rollDamage(this.hero.stats, this.enemy.stats, multiplier, this.rng);
