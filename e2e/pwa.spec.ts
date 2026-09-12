@@ -71,6 +71,14 @@ test.describe('PRD-02 iOS PWA support', () => {
       expect(appStyle.maxWidth).toBe('none');
       expect(appStyle.marginLeft).toBe('0px');
       expect(appStyle.marginRight).toBe('0px');
+
+      const layout = await page.evaluate(() => window.__FA_DEBUG__?.layout());
+      expect(layout).toBeDefined();
+      expect(layout!.hud.left).toBeGreaterThanOrEqual(28);
+      expect(layout!.hud.right).toBeLessThanOrEqual(layout!.width - 28);
+      expect(layout!.hud.top).toBeGreaterThanOrEqual(18);
+      expect(layout!.hud.bottom).toBeLessThanOrEqual(layout!.height - 18);
+      expect(layout!.hud.right - layout!.hud.left).toBeLessThanOrEqual((layout!.hud.bottom - layout!.hud.top) * (16 / 9) + 1);
     });
   }
 
@@ -81,9 +89,7 @@ test.describe('PRD-02 iOS PWA support', () => {
     await expect(page.locator('#app')).toHaveCSS('visibility', 'hidden');
   });
 
-  test('stylesheet keeps dynamic viewport sizing and standalone landscape support without a max-width cap', async ({
-    request,
-  }) => {
+  test('stylesheet keeps edge-to-edge dynamic viewport sizing while exposing iOS safe-area variables', async ({ request }) => {
     const response = await request.get('/src/style.css');
     expect(response.ok()).toBeTruthy();
     const css = await response.text();
@@ -91,5 +97,11 @@ test.describe('PRD-02 iOS PWA support', () => {
     expect(css).toContain('100dvh');
     expect(css).toContain('(display-mode: standalone) and (orientation: landscape)');
     expect(css).toContain('max-width: none');
+    expect(css).toContain('--safe-left: env(safe-area-inset-left, 0px)');
+    expect(css).toContain('--safe-right: env(safe-area-inset-right, 0px)');
+    expect(css).toContain('--safe-top: env(safe-area-inset-top, 0px)');
+    expect(css).toContain('--safe-bottom: env(safe-area-inset-bottom, 0px)');
+    expect(css).toContain('#app {');
+    expect(css).toContain('inset: 0');
   });
 });
