@@ -44,7 +44,9 @@ test('phone landscape fills the available viewport and essential touch actions w
   const before = await page.evaluate(() => (window as DebugWindow).__FA_DEBUG__?.power() ?? 0);
   expect(await page.evaluate(() => (window as DebugWindow).__FA_DEBUG__?.loot())).not.toBeNull();
   await logicalTap(page, 530, 439);
-  await expect.poll(async () => page.evaluate(() => (window as DebugWindow).__FA_DEBUG__?.power() ?? 0)).toBeGreaterThan(before);
+  await expect
+    .poll(async () => page.evaluate(() => (window as DebugWindow).__FA_DEBUG__?.power() ?? 0))
+    .toBeGreaterThan(before);
   expect(await page.evaluate(() => (window as DebugWindow).__FA_DEBUG__?.loot())).toBeNull();
 });
 
