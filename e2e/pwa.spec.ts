@@ -60,7 +60,12 @@ test.describe('PRD-02 iOS PWA support', () => {
 
       const appStyle = await page.locator('#app').evaluate((element) => {
         const style = getComputedStyle(element);
-        return { width: style.width, maxWidth: style.maxWidth, marginLeft: style.marginLeft, marginRight: style.marginRight };
+        return {
+          width: style.width,
+          maxWidth: style.maxWidth,
+          marginLeft: style.marginLeft,
+          marginRight: style.marginRight,
+        };
       });
       expect(parseFloat(appStyle.width)).toBeGreaterThanOrEqual(viewport.width - 2);
       expect(appStyle.maxWidth).toBe('none');
@@ -76,7 +81,9 @@ test.describe('PRD-02 iOS PWA support', () => {
     await expect(page.locator('#app')).toHaveCSS('visibility', 'hidden');
   });
 
-  test('stylesheet keeps dynamic viewport sizing and standalone landscape support without a max-width cap', async ({ request }) => {
+  test('stylesheet keeps dynamic viewport sizing and standalone landscape support without a max-width cap', async ({
+    request,
+  }) => {
     const response = await request.get('/src/style.css');
     expect(response.ok()).toBeTruthy();
     const css = await response.text();
