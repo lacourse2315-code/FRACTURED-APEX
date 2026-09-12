@@ -308,7 +308,12 @@ export class DevScene extends Phaser.Scene {
     const cloak = this.add.triangle(-20, 18, -54, -58, 4, -42, -24, 80, 0x10172f, 0.95);
     const legL = this.add.rectangle(-28, 54, 28, 80, 0x182440).setStrokeStyle(3, 0x6684b0);
     const legR = this.add.rectangle(20, 54, 28, 80, 0x182440).setStrokeStyle(3, 0x6684b0);
-    const body = this.add.polygon(0, -20, [-58, -35, -38, -78, 0, -92, 42, -76, 58, -28, 36, 36, 0, 50, -38, 34], 0x18233e);
+    const body = this.add.polygon(
+      0,
+      -20,
+      [-58, -35, -38, -78, 0, -92, 42, -76, 58, -28, 36, 36, 0, 50, -38, 34],
+      0x18233e,
+    );
     body.setStrokeStyle(4, 0x7894bf, 1);
     const shoulderL = this.add.circle(-54, -48, 24, 0x26375d).setStrokeStyle(4, 0x8aa7d2);
     const shoulderR = this.add.circle(52, -48, 24, 0x26375d).setStrokeStyle(4, 0x8aa7d2);
@@ -372,10 +377,19 @@ export class DevScene extends Phaser.Scene {
     const shadow = this.add.ellipse(0, 88, 130, 24, 0x000000, 0.38);
     const legL = this.add.rectangle(-26, 55, 30, 82, 0x291431).setStrokeStyle(3, 0x864b95);
     const legR = this.add.rectangle(22, 55, 30, 82, 0x291431).setStrokeStyle(3, 0x864b95);
-    const body = this.add.polygon(0, -20, [-60, -30, -42, -79, 0, -95, 43, -78, 60, -28, 37, 39, 0, 52, -38, 38], 0x28132f);
+    const body = this.add.polygon(
+      0,
+      -20,
+      [-60, -30, -42, -79, 0, -95, 43, -78, 60, -28, 37, 39, 0, 52, -38, 38],
+      0x28132f,
+    );
     body.setStrokeStyle(4, 0xa25aab);
-    const shoulderL = this.add.polygon(-54, -52, [-28, 8, -8, -26, 28, -18, 22, 18, -6, 28], 0x3d1b47).setStrokeStyle(3, 0xb565bf);
-    const shoulderR = this.add.polygon(54, -52, [-28, -18, 8, -26, 28, 8, 6, 28, -22, 18], 0x3d1b47).setStrokeStyle(3, 0xb565bf);
+    const shoulderL = this.add
+      .polygon(-54, -52, [-28, 8, -8, -26, 28, -18, 22, 18, -6, 28], 0x3d1b47)
+      .setStrokeStyle(3, 0xb565bf);
+    const shoulderR = this.add
+      .polygon(54, -52, [-28, -18, 8, -26, 28, 8, 6, 28, -22, 18], 0x3d1b47)
+      .setStrokeStyle(3, 0xb565bf);
     const helm = this.add.polygon(0, -114, [-34, -18, -26, -52, 0, -69, 29, -49, 36, -14, 18, 16, -20, 16], 0x211027);
     helm.setStrokeStyle(4, 0xb867c2);
     const crystalL = this.add.triangle(-31, -155, 0, 44, -27, -24, 11, 24, 0xc33cff, 0.9).setStrokeStyle(2, 0xff5d9f);
@@ -384,7 +398,10 @@ export class DevScene extends Phaser.Scene {
     const core = this.add.diamond(0, -34, 0, 29, 16, 0xe245a5, 0.88).setStrokeStyle(2, 0xff9bc8);
     const arm = this.add.rectangle(-56, -2, 24, 82, 0x35163e).setRotation(0.26).setStrokeStyle(3, 0x9551a4);
     const glaiveGrip = this.add.rectangle(-83, -6, 12, 130, 0x4b2455).setRotation(0.16);
-    const glaive = this.add.triangle(-104, -74, 0, 50, -50, -8, -2, -70, 0xd745a1, 0.9).setRotation(0.16).setStrokeStyle(3, 0xff79b5);
+    const glaive = this.add
+      .triangle(-104, -74, 0, 50, -50, -8, -2, -70, 0xd745a1, 0.9)
+      .setRotation(0.16)
+      .setStrokeStyle(3, 0xff79b5);
     const crack1 = this.add.line(0, 0, -15, -56, 5, -36, -9, -14, 0xd346ff, 0.85).setLineWidth(3);
     const crack2 = this.add.line(0, 0, 11, -17, -5, 10, 17, 28, 0xff477b, 0.8).setLineWidth(2);
     c.add([
@@ -659,10 +676,46 @@ export class DevScene extends Phaser.Scene {
     this.resourcesText.setText(`SHARDS ${this.state.currencies.shards}   ESSENCE ${this.state.currencies.essence}`);
 
     const meterY = this.layout.heroY - 118;
-    this.drawMeter(this.heroMeter, this.layout.heroX - 76, meterY, 152, 11, s.heroHp / Math.max(1, s.heroMaxHp), 0x46d59a, 0x7effc9);
-    this.drawMeter(this.enemyMeter, this.layout.enemyX - 76, meterY, 152, 11, s.enemyHp / Math.max(1, s.enemyMaxHp), 0xea426f, 0xff82a3);
-    this.drawMeter(this.resolveMeter, this.scale.width / 2 - 104, this.hud.top + 78, 208, 10, s.resolve / 100, 0x8f61ff, 0xd3b7ff);
-    this.drawMeter(this.pyraMeter, this.layout.pyraX - 44, this.layout.pyraY + 76, 88, 7, s.pyraCharge / 3, 0xff923f, 0xffd36d);
+    this.drawMeter(
+      this.heroMeter,
+      this.layout.heroX - 76,
+      meterY,
+      152,
+      11,
+      s.heroHp / Math.max(1, s.heroMaxHp),
+      0x46d59a,
+      0x7effc9,
+    );
+    this.drawMeter(
+      this.enemyMeter,
+      this.layout.enemyX - 76,
+      meterY,
+      152,
+      11,
+      s.enemyHp / Math.max(1, s.enemyMaxHp),
+      0xea426f,
+      0xff82a3,
+    );
+    this.drawMeter(
+      this.resolveMeter,
+      this.scale.width / 2 - 104,
+      this.hud.top + 78,
+      208,
+      10,
+      s.resolve / 100,
+      0x8f61ff,
+      0xd3b7ff,
+    );
+    this.drawMeter(
+      this.pyraMeter,
+      this.layout.pyraX - 44,
+      this.layout.pyraY + 76,
+      88,
+      7,
+      s.pyraCharge / 3,
+      0xff923f,
+      0xffd36d,
+    );
 
     const weapon = this.state.equipped.weapon
       ? this.state.inventory.find((item) => item.instanceId === this.state.equipped.weapon)
@@ -714,7 +767,12 @@ export class DevScene extends Phaser.Scene {
         if (event.source === 'hero') this.animateHeroAttack(event.label ?? 'Attack', event.critical === true);
         if (event.source === 'pyra') this.animatePyraAttack(event.label ?? 'Ember Bolt');
         this.hitReact(this.enemyActor, 0xff5d93);
-        this.impactBurst(this.layout.enemyX - 40, this.layout.enemyY - 25, event.critical ? 0xffd36d : 0xa56cff, event.critical ? 10 : 6);
+        this.impactBurst(
+          this.layout.enemyX - 40,
+          this.layout.enemyY - 25,
+          event.critical ? 0xffd36d : 0xa56cff,
+          event.critical ? 10 : 6,
+        );
         this.floater(
           this.layout.enemyX,
           this.layout.enemyY - 92,
@@ -752,12 +810,26 @@ export class DevScene extends Phaser.Scene {
     }
 
     if (event.type === 'victory') {
-      this.tweens.add({ targets: this.enemyActor, alpha: 0, y: this.layout.enemyY + 30, angle: 12, duration: 420, ease: 'Quad.In' });
+      this.tweens.add({
+        targets: this.enemyActor,
+        alpha: 0,
+        y: this.layout.enemyY + 30,
+        angle: 12,
+        duration: 420,
+        ease: 'Quad.In',
+      });
       this.impactBurst(this.layout.enemyX, this.layout.enemyY, 0xc84cff, 12);
     }
 
     if (event.type === 'defeat') {
-      this.tweens.add({ targets: this.heroActor, alpha: 0.35, y: this.layout.heroY + 22, angle: -8, duration: 360, ease: 'Quad.In' });
+      this.tweens.add({
+        targets: this.heroActor,
+        alpha: 0.35,
+        y: this.layout.heroY + 22,
+        angle: -8,
+        duration: 360,
+        ease: 'Quad.In',
+      });
     }
   }
 
@@ -821,11 +893,19 @@ export class DevScene extends Phaser.Scene {
         });
       },
     });
-    this.impactBurst(pounce ? this.layout.enemyX - 40 : startX + 80, pounce ? this.layout.enemyY - 22 : startY - 20, 0xff913d, pounce ? 9 : 5);
+    this.impactBurst(
+      pounce ? this.layout.enemyX - 40 : startX + 80,
+      pounce ? this.layout.enemyY - 22 : startY - 20,
+      0xff913d,
+      pounce ? 9 : 5,
+    );
   }
 
   private hitReact(actor: Phaser.GameObjects.Container, color: number): void {
-    const ring = this.add.circle(actor.x, actor.y - 16, 54, color, 0.1).setDepth(8).setStrokeStyle(3, color, 0.75);
+    const ring = this.add
+      .circle(actor.x, actor.y - 16, 54, color, 0.1)
+      .setDepth(8)
+      .setStrokeStyle(3, color, 0.75);
     this.tweens.add({
       targets: ring,
       scale: 1.7,
@@ -837,7 +917,10 @@ export class DevScene extends Phaser.Scene {
   }
 
   private shieldPulse(): void {
-    const shield = this.add.circle(this.layout.heroX, this.layout.heroY - 8, 78, 0x4ec8ff, 0.06).setDepth(8).setStrokeStyle(4, 0x7ddcff, 0.8);
+    const shield = this.add
+      .circle(this.layout.heroX, this.layout.heroY - 8, 78, 0x4ec8ff, 0.06)
+      .setDepth(8)
+      .setStrokeStyle(4, 0x7ddcff, 0.8);
     this.tweens.add({
       targets: shield,
       scale: 1.35,
