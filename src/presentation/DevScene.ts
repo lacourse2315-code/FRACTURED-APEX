@@ -322,14 +322,14 @@ export class DevScene extends Phaser.Scene {
     const hornL = this.add.triangle(-28, -151, 0, 35, -24, -28, 8, 30, 0x213052).setStrokeStyle(2, 0x6f8cb8);
     const hornR = this.add.triangle(28, -151, 0, 35, 24, -28, -8, 30, 0x213052).setStrokeStyle(2, 0x6f8cb8);
     const visor = this.add.rectangle(0, -116, 48, 8, 0x8f68ff, 0.95);
-    const core = this.add.diamond(0, -36, 0, 26, 14, 0x9d67ff, 0.9).setStrokeStyle(2, 0xe0d2ff);
+    const core = this.add.polygon(0, -36, [0, -13, 7, 0, 0, 13, -7, 0], 0x9d67ff, 0.9).setStrokeStyle(2, 0xe0d2ff);
     const arm = this.add.rectangle(55, -2, 24, 82, 0x1b2948).setRotation(-0.32).setStrokeStyle(3, 0x718bb6);
     const grip = this.add.rectangle(78, -23, 14, 64, 0x27395d).setRotation(-0.55);
     const blade = this.add.polygon(118, -57, [-14, -80, 15, -80, 25, 70, 0, 94, -16, 68], 0x9bc4df);
     blade.setRotation(-0.55).setStrokeStyle(3, 0xdff5ff);
     const bladeRift = this.add.rectangle(116, -61, 6, 110, 0xa46cff, 0.9).setRotation(-0.55);
-    const crack1 = this.add.line(0, 0, -22, -58, -5, -36, 14, -62, 0xa56cff, 0.85).setLineWidth(3);
-    const crack2 = this.add.line(0, 0, 8, -16, -9, 9, 12, 25, 0x7651e8, 0.75).setLineWidth(2);
+    const crack1 = this.add.line(0, 0, -22, -58, 14, -62, 0xa56cff, 0.85).setLineWidth(3);
+    const crack2 = this.add.line(0, 0, 8, -16, 12, 25, 0x7651e8, 0.75).setLineWidth(2);
     c.add([
       shadow,
       cloak,
@@ -395,15 +395,15 @@ export class DevScene extends Phaser.Scene {
     const crystalL = this.add.triangle(-31, -155, 0, 44, -27, -24, 11, 24, 0xc33cff, 0.9).setStrokeStyle(2, 0xff5d9f);
     const crystalR = this.add.triangle(31, -155, 0, 44, 27, -24, -11, 24, 0xc33cff, 0.9).setStrokeStyle(2, 0xff5d9f);
     const visor = this.add.rectangle(0, -118, 48, 8, 0xff477b, 0.95);
-    const core = this.add.diamond(0, -34, 0, 29, 16, 0xe245a5, 0.88).setStrokeStyle(2, 0xff9bc8);
+    const core = this.add.polygon(0, -34, [0, -14, 8, 0, 0, 14, -8, 0], 0xe245a5, 0.88).setStrokeStyle(2, 0xff9bc8);
     const arm = this.add.rectangle(-56, -2, 24, 82, 0x35163e).setRotation(0.26).setStrokeStyle(3, 0x9551a4);
     const glaiveGrip = this.add.rectangle(-83, -6, 12, 130, 0x4b2455).setRotation(0.16);
     const glaive = this.add
       .triangle(-104, -74, 0, 50, -50, -8, -2, -70, 0xd745a1, 0.9)
       .setRotation(0.16)
       .setStrokeStyle(3, 0xff79b5);
-    const crack1 = this.add.line(0, 0, -15, -56, 5, -36, -9, -14, 0xd346ff, 0.85).setLineWidth(3);
-    const crack2 = this.add.line(0, 0, 11, -17, -5, 10, 17, 28, 0xff477b, 0.8).setLineWidth(2);
+    const crack1 = this.add.line(0, 0, -15, -56, -9, -14, 0xd346ff, 0.85).setLineWidth(3);
+    const crack2 = this.add.line(0, 0, 11, -17, 17, 28, 0xff477b, 0.8).setLineWidth(2);
     c.add([
       shadow,
       legL,
