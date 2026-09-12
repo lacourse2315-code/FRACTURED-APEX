@@ -78,7 +78,7 @@ export function generateItem(
 
 export function equippedItem(state: GameState, slot: EquipmentSlot): EquipmentItem | null {
   const id = state.equipped[slot];
-  return id ? state.inventory.find((item) => item.instanceId === id) ?? null : null;
+  return id ? (state.inventory.find((item) => item.instanceId === id) ?? null) : null;
 }
 
 export function comparisonDelta(state: GameState, item: EquipmentItem): number {

@@ -13,7 +13,11 @@ const state = saves.load();
 const scene = new DevScene(state, (next) => saves.save(next));
 new Phaser.Game({
   type: Phaser.AUTO,
-  parent: 'app', width: 1280, height: 720, backgroundColor: '#080b1d', scene: [scene],
+  parent: 'app',
+  width: 1280,
+  height: 720,
+  backgroundColor: '#080b1d',
+  scene: [scene],
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 1280, height: 720 },
   render: { antialias: true },
 });

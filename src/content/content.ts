@@ -15,11 +15,36 @@ const stats = (overrides: Partial<CombatStats>): CombatStats => ({
 });
 
 export const enemies: EnemyDefinition[] = [
-  { id: 'dev-brute', name: 'Fracture Brute', archetype: 'brute', stats: stats({ maxHp: 390, attack: 68, defense: 22, attackSpeed: 0.62 }) },
-  { id: 'dev-skirmisher', name: 'Rift Skirmisher', archetype: 'skirmisher', stats: stats({ maxHp: 265, attack: 44, defense: 14, attackSpeed: 1.22, dodge: 12 }) },
-  { id: 'dev-warden', name: 'Fracture Warden', archetype: 'warden', stats: stats({ maxHp: 520, attack: 58, defense: 54, attackSpeed: 0.78 }) },
-  { id: 'dev-captain', name: 'Apex Captain', archetype: 'warden', stats: stats({ maxHp: 670, attack: 72, defense: 64, attackSpeed: 0.82, critChance: 0.08 }) },
-  { id: 'dev-captain-hard', name: 'Ascendant Captain', archetype: 'brute', stats: stats({ maxHp: 1250, attack: 205, defense: 82, attackSpeed: 0.92, accuracy: 118 }) },
+  {
+    id: 'dev-brute',
+    name: 'Fracture Brute',
+    archetype: 'brute',
+    stats: stats({ maxHp: 390, attack: 68, defense: 22, attackSpeed: 0.62 }),
+  },
+  {
+    id: 'dev-skirmisher',
+    name: 'Rift Skirmisher',
+    archetype: 'skirmisher',
+    stats: stats({ maxHp: 265, attack: 44, defense: 14, attackSpeed: 1.22, dodge: 12 }),
+  },
+  {
+    id: 'dev-warden',
+    name: 'Fracture Warden',
+    archetype: 'warden',
+    stats: stats({ maxHp: 520, attack: 58, defense: 54, attackSpeed: 0.78 }),
+  },
+  {
+    id: 'dev-captain',
+    name: 'Apex Captain',
+    archetype: 'warden',
+    stats: stats({ maxHp: 670, attack: 72, defense: 64, attackSpeed: 0.82, critChance: 0.08 }),
+  },
+  {
+    id: 'dev-captain-hard',
+    name: 'Ascendant Captain',
+    archetype: 'brute',
+    stats: stats({ maxHp: 1250, attack: 205, defense: 82, attackSpeed: 0.92, accuracy: 118 }),
+  },
 ];
 
 export const stages: StageDefinition[] = [
@@ -38,14 +63,16 @@ export function validateContent(content: CombatContent): string[] {
     if (ids.has(enemy.id)) errors.push(`Duplicate ID: ${enemy.id}`);
     ids.add(enemy.id);
     if (!Number.isFinite(enemy.stats.maxHp) || enemy.stats.maxHp <= 0) errors.push(`Invalid enemy HP: ${enemy.id}`);
-    if (!Number.isFinite(enemy.stats.attack) || enemy.stats.attack <= 0) errors.push(`Invalid enemy attack: ${enemy.id}`);
+    if (!Number.isFinite(enemy.stats.attack) || enemy.stats.attack <= 0)
+      errors.push(`Invalid enemy attack: ${enemy.id}`);
   }
   const enemyIds = new Set(content.enemies.map((enemy) => enemy.id));
   for (const stage of content.stages) {
     if (ids.has(stage.id)) errors.push(`Duplicate ID: ${stage.id}`);
     ids.add(stage.id);
     if (stage.stage < 1 || stage.waves.length !== 3) errors.push(`Invalid stage structure: ${stage.id}`);
-    for (const enemyId of stage.waves) if (!enemyIds.has(enemyId)) errors.push(`Invalid enemy reference: ${stage.id}/${enemyId}`);
+    for (const enemyId of stage.waves)
+      if (!enemyIds.has(enemyId)) errors.push(`Invalid enemy reference: ${stage.id}/${enemyId}`);
   }
   for (const base of ITEM_BASES) {
     if (ids.has(base.id)) errors.push(`Duplicate ID: ${base.id}`);
