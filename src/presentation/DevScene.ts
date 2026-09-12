@@ -6,11 +6,19 @@ import { itemScore } from '../core/loot';
 import { STRINGS } from '../shared/strings';
 import { bindTap } from './input';
 
+interface SafeBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
 interface DebugApi {
   snapshot: () => ReturnType<PlayableCore['snapshot']>;
   state: () => GameState;
   power: () => number;
   loot: () => EquipmentItem | null;
+  layout: () => { width: number; height: number; hud: SafeBounds; insets: SafeBounds };
   advance: (realDeltaMs: number) => number;
 }
 declare global {
@@ -56,7 +64,7 @@ export class DevScene extends Phaser.Scene {
     const hud = this.hudBounds(w, h);
     this.drawBackdrop(w, h);
     this.add
-      .text(w / 2, 18, STRINGS.title, {
+      .text(w / 2, hud.top, STRINGS.title, {
         fontFamily: 'Arial',
         fontSize: '30px',
         fontStyle: 'bold',
@@ -64,21 +72,30 @@ export class DevScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
     this.add
-      .text(w / 2, 52, STRINGS.subtitle, { fontFamily: 'Arial', fontSize: '12px', color: '#8fa9d8' })
+      .text(w / 2, hud.top + 34, STRINGS.subtitle, {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#8fa9d8',
+      })
       .setOrigin(0.5, 0);
-    this.stageText = this.add.text(hud.left + 24, 20, '', {
+    this.stageText = this.add.text(hud.left, hud.top + 4, '', {
       fontFamily: 'Arial',
       fontSize: '16px',
       color: '#a9c7ff',
     });
     this.powerText = this.add
-      .text(hud.right - 24, 20, '', { fontFamily: 'Arial', fontSize: '16px', align: 'right', color: '#ffd778' })
+      .text(hud.right, hud.top + 4, '', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        align: 'right',
+        color: '#ffd778',
+      })
       .setOrigin(1, 0);
-    this.makeMute(hud.right);
+    this.makeMute(hud.right, hud.top);
     this.makeActors(w, h);
-    this.makeHud(w, h, hud.left, hud.right);
-    this.makeSpeedButtons(w, h);
-    this.makeNav(w, h, hud.left, hud.right);
+    this.makeHud(w, h, hud);
+    this.makeSpeedButtons(w, hud.bottom);
+    this.makeNav(w, hud);
     this.makeResultPanel(w, h);
     this.updateUi();
     this.scale.on('resize', () => this.scene.restart());
@@ -88,6 +105,10 @@ export class DevScene extends Phaser.Scene {
         state: () => this.state,
         power: () => this.core.power(),
         loot: () => this.core.loot(),
+        layout: () => {
+          const { width, height } = this.scale;
+          return { width, height, hud: this.hudBounds(width, height), insets: this.safeInsets() };
+        },
         advance: (realDeltaMs: number) => {
           const before = this.state.statistics.totalSimulationMs;
           this.sim.advance(realDeltaMs, (dt) => this.core.tick(dt));
@@ -104,10 +125,31 @@ export class DevScene extends Phaser.Scene {
     this.updateUi();
   }
 
-  private hudBounds(w: number, h: number): { left: number; right: number } {
-    const hudWidth = Math.min(w, h * (16 / 9));
-    const left = (w - hudWidth) / 2;
-    return { left, right: left + hudWidth };
+  private safeInsets(): SafeBounds {
+    const style = getComputedStyle(document.documentElement);
+    const read = (name: string): number => Number.parseFloat(style.getPropertyValue(name)) || 0;
+    return {
+      left: read('--safe-left'),
+      right: read('--safe-right'),
+      top: read('--safe-top'),
+      bottom: read('--safe-bottom'),
+    };
+  }
+
+  private hudBounds(w: number, h: number): SafeBounds {
+    const insets = this.safeInsets();
+    const horizontalGutter = 28;
+    const verticalGutter = 18;
+    const usableLeft = insets.left + horizontalGutter;
+    const usableRight = w - insets.right - horizontalGutter;
+    const usableTop = insets.top + verticalGutter;
+    const usableBottom = h - insets.bottom - verticalGutter;
+    const usableWidth = Math.max(0, usableRight - usableLeft);
+    const usableHeight = Math.max(0, usableBottom - usableTop);
+    const hudWidth = Math.min(usableWidth, usableHeight * (16 / 9));
+    const left = Math.max(usableLeft, (w - hudWidth) / 2);
+    const right = Math.min(usableRight, left + hudWidth);
+    return { left, right, top: usableTop, bottom: usableBottom };
   }
 
   private drawBackdrop(w: number, h: number): void {
@@ -143,32 +185,33 @@ export class DevScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
   }
 
-  private makeHud(w: number, h: number, hudLeft: number, hudRight: number): void {
-    this.heroHp = this.add.text(hudLeft + 24, h * 0.24, '', {
+  private makeHud(w: number, h: number, hud: SafeBounds): void {
+    const hpY = hud.top + 72;
+    this.heroHp = this.add.text(hud.left, hpY, '', {
       fontFamily: 'Arial',
       fontSize: '16px',
       color: '#8fffc1',
     });
     this.enemyHp = this.add
-      .text(hudRight - 24, h * 0.24, '', {
+      .text(hud.right, hpY, '', {
         fontFamily: 'Arial',
         fontSize: '16px',
         color: '#ff9caf',
         align: 'right',
       })
       .setOrigin(1, 0);
-    this.resolveText = this.add.text(hudLeft + 24, h * 0.3, '', {
+    this.resolveText = this.add.text(hud.left, hpY + 38, '', {
       fontFamily: 'Arial',
       fontSize: '15px',
       color: '#bda4ff',
     });
-    this.pyraText = this.add.text(hudLeft + 24, h * 0.35, '', {
+    this.pyraText = this.add.text(hud.left, hpY + 76, '', {
       fontFamily: 'Arial',
       fontSize: '14px',
       color: '#ffbd82',
     });
     this.skillText = this.add
-      .text(w / 2, h * 0.69, '', {
+      .text(w / 2, Math.min(h * 0.69, hud.bottom - 118), '', {
         fontFamily: 'Arial',
         fontSize: '15px',
         color: '#dfe8ff',
@@ -176,16 +219,16 @@ export class DevScene extends Phaser.Scene {
         padding: { x: 12, y: 8 },
       })
       .setOrigin(0.5);
-    this.resourcesText = this.add.text(hudLeft + 24, h - 112, '', {
+    this.resourcesText = this.add.text(hud.left, hud.bottom - 94, '', {
       fontFamily: 'Arial',
       fontSize: '14px',
       color: '#dbe7ff',
     });
   }
 
-  private makeMute(hudRight: number): void {
+  private makeMute(hudRight: number, hudTop: number): void {
     const mute = this.add
-      .text(hudRight - 24, 52, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, {
+      .text(hudRight, hudTop + 40, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, {
         fontFamily: 'Arial',
         fontSize: '12px',
         backgroundColor: '#1b2343',
@@ -202,10 +245,10 @@ export class DevScene extends Phaser.Scene {
     this.sound.mute = this.state.settings.muted;
   }
 
-  private makeSpeedButtons(w: number, h: number): void {
+  private makeSpeedButtons(w: number, hudBottom: number): void {
     ([1, 2, 3] as GameSpeed[]).forEach((speed, i) => {
       const t = this.add
-        .text(w / 2 - 92 + i * 92, h - 112, `x${speed}`, {
+        .text(w / 2 - 92 + i * 92, hudBottom - 94, `x${speed}`, {
           fontFamily: 'Arial',
           fontSize: '18px',
           backgroundColor: this.state.settings.speed === speed ? '#5841a8' : '#1b2343',
@@ -222,12 +265,12 @@ export class DevScene extends Phaser.Scene {
     });
   }
 
-  private makeNav(w: number, h: number, hudLeft: number, hudRight: number): void {
+  private makeNav(w: number, hud: SafeBounds): void {
     const labels = [STRINGS.battle, STRINGS.hero, STRINGS.forge, STRINGS.companions, STRINGS.rifts, STRINGS.more];
-    const cell = (hudRight - hudLeft) / labels.length;
+    const cell = (hud.right - hud.left) / labels.length;
     labels.forEach((label, i) => {
       const t = this.add
-        .text(hudLeft + cell * i + cell / 2, h - 34, label, {
+        .text(hud.left + cell * i + cell / 2, hud.bottom - 18, label, {
           fontFamily: 'Arial',
           fontSize: '13px',
           color: i < 2 ? '#fff' : '#9aa7c7',
@@ -236,8 +279,8 @@ export class DevScene extends Phaser.Scene {
         })
         .setOrigin(0.5)
         .setName(`nav-${label.toLowerCase()}`);
-      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel(w, h));
-      else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, h));
+      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel(w, hud.bottom));
+      else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, hud.bottom));
     });
   }
 
