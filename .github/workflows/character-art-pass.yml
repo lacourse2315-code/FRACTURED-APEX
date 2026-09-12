@@ -66,6 +66,10 @@ jobs:
             "async function advance(page: Page, realDeltaMs: number): Promise<number> {\n  return page.evaluate((delta) => {",
             "async function advance(page: Page, realDeltaMs: number): Promise<number> {\n  await page.waitForFunction(() => !!(window as DebugWindow).__FA_DEBUG__);\n  return page.evaluate((delta) => {",
           )
+          s = s.replace(
+            "async function logicalClick(page: Page, x: number, y: number, touch = false) {\n  const canvas = page.locator('canvas');",
+            "async function logicalClick(page: Page, x: number, y: number, touch = false) {\n  await page.waitForFunction(() => !!(window as DebugWindow).__FA_DEBUG__);\n  const canvas = page.locator('canvas');",
+          )
           p.write_text(s)
           PY
 
