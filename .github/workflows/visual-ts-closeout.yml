@@ -1,0 +1,51 @@
+name: Visual TypeScript Closeout
+
+on:
+  push:
+    branches: [prd-02-playable-core]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prd-02-playable-core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Apply presentation-only Phaser factory compatibility fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/presentation/DevScene.ts')
+          s = p.read_text()
+          replacements = {
+              "this.add.diamond(0, -36, 0, 26, 14, 0x9d67ff, 0.9)": "this.add.polygon(0, -36, [0, -13, 7, 0, 0, 13, -7, 0], 0x9d67ff, 0.9)",
+              "this.add.diamond(0, -34, 0, 29, 16, 0xe245a5, 0.88)": "this.add.polygon(0, -34, [0, -14, 8, 0, 0, 14, -8, 0], 0xe245a5, 0.88)",
+              "this.add.line(0, 0, -22, -58, -5, -36, 14, -62, 0xa56cff, 0.85)": "this.add.line(0, 0, -22, -58, 14, -62, 0xa56cff, 0.85)",
+              "this.add.line(0, 0, 8, -16, -9, 9, 12, 25, 0x7651e8, 0.75)": "this.add.line(0, 0, 8, -16, 12, 25, 0x7651e8, 0.75)",
+              "this.add.line(0, 0, -15, -56, 5, -36, -9, -14, 0xd346ff, 0.85)": "this.add.line(0, 0, -15, -56, -9, -14, 0xd346ff, 0.85)",
+              "this.add.line(0, 0, 11, -17, -5, 10, 17, 28, 0xff477b, 0.8)": "this.add.line(0, 0, 11, -17, 17, 28, 0xff477b, 0.8)",
+          }
+          for old, new in replacements.items():
+              if old not in s:
+                  raise SystemExit(f'missing expected source fragment: {old}')
+              s = s.replace(old, new)
+          p.write_text(s)
+          PY
+          npx prettier --write src/presentation/DevScene.ts
+          npm run typecheck
+      - name: Commit presentation-only compatibility fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/presentation/DevScene.ts
+          git commit -m "fix: close visual combat Phaser compatibility"
+          git push origin HEAD:prd-02-playable-core
