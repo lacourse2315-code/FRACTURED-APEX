@@ -20,6 +20,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
       - name: Replace procedural hero/enemy with loaded sprite assets
         shell: bash
         run: |
