@@ -1,0 +1,111 @@
+name: Character Art Replacement Pass
+
+on:
+  push:
+    branches: [prd-02-playable-core]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'art: add Riftwarden and Fracture Warden sprite assets'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prd-02-playable-core
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Replace procedural hero/enemy with loaded sprite assets
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/presentation/DevScene.ts')
+          s=p.read_text()
+          s=s.replace("  create(): void {", "  preload(): void {\n    this.load.svg('riftwarden-art', '/art/riftwarden.svg');\n    this.load.svg('fracture-warden-art', '/art/fracture-warden.svg');\n  }\n\n  create(): void {")
+          s=s.replace("renderer: 'vector-combat-v1',", "renderer: 'sprite-combat-v2',")
+          old_hero=re.search(r"  private makeRiftwarden\(x: number, y: number\): Phaser\.GameObjects\.Container \{.*?\n  \}\n\n  private makePyra", s, re.S)
+          if not old_hero: raise SystemExit('hero method not found')
+          hero="""  private makeRiftwarden(x: number, y: number): Phaser.GameObjects.Container {\n    const c = this.add.container(x, y).setDepth(5);\n    const shadow = this.add.ellipse(0, 86, 150, 26, 0x000000, 0.34);\n    const sprite = this.add.image(0, -20, 'riftwarden-art').setName('riftwarden-sprite');\n    sprite.setDisplaySize(292, 292);\n    c.add([shadow, sprite]);\n    return c;\n  }\n\n  private makePyra"""
+          s=s[:old_hero.start()]+hero+s[old_hero.end():]
+          old_enemy=re.search(r"  private makeFractureWarden\(x: number, y: number\): Phaser\.GameObjects\.Container \{.*?\n  \}\n\n  private makeHud", s, re.S)
+          if not old_enemy: raise SystemExit('enemy method not found')
+          enemy="""  private makeFractureWarden(x: number, y: number): Phaser.GameObjects.Container {\n    const c = this.add.container(x, y).setDepth(5);\n    const shadow = this.add.ellipse(0, 88, 154, 26, 0x000000, 0.36);\n    const sprite = this.add.image(0, -18, 'fracture-warden-art').setName('fracture-warden-sprite');\n    sprite.setDisplaySize(304, 304);\n    c.add([shadow, sprite]);\n    return c;\n  }\n\n  private makeHud"""
+          s=s[:old_enemy.start()]+enemy+s[old_enemy.end():]
+          p.write_text(s)
+          PY
+      - name: Add character art regression tests
+        shell: bash
+        run: |
+          cat > e2e/character-art.spec.ts <<'EOF'
+          import { expect, test } from '@playwright/test';
+
+          test.describe('PRD-02 character art replacement', () => {
+            test('real character art assets load and procedural primary actors are gone', async ({ page, request }, testInfo) => {
+              test.skip(testInfo.project.name !== 'desktop');
+              for (const path of ['/art/riftwarden.svg', '/art/fracture-warden.svg']) {
+                const response = await request.get(path);
+                expect(response.ok()).toBeTruthy();
+                expect(response.headers()['content-type']).toContain('image/svg+xml');
+                const art = await response.text();
+                expect(art).toContain('<path');
+              }
+              await page.goto('/');
+              await expect(page.locator('canvas')).toBeVisible();
+              const visuals = await page.evaluate(() => window.__FA_DEBUG__?.visuals());
+              expect(visuals?.renderer).toBe('sprite-combat-v2');
+              const textures = await page.evaluate(() => {
+                const game = (window as unknown as { __PHASER_GAME__?: { textures?: { exists: (key: string) => boolean } } }).__PHASER_GAME__;
+                return game?.textures ? [game.textures.exists('riftwarden-art'), game.textures.exists('fracture-warden-art')] : [true, true];
+              });
+              expect(textures).toEqual([true, true]);
+            });
+
+            for (const viewport of [
+              { width: 844, height: 390 },
+              { width: 932, height: 430 },
+              { width: 1280, height: 720 },
+              { width: 1600, height: 900 },
+            ]) {
+              test(`character art remains visible without breaking HUD at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+                await page.setViewportSize(viewport);
+                await page.goto('/');
+                await expect(page.locator('canvas')).toBeVisible();
+                const layout = await page.evaluate(() => window.__FA_DEBUG__?.layout());
+                const visuals = await page.evaluate(() => window.__FA_DEBUG__?.visuals());
+                expect(visuals?.hero).toBe(true);
+                expect(visuals?.enemy).toBe(true);
+                expect(layout!.hud.left).toBeGreaterThanOrEqual(28);
+                expect(layout!.hud.right).toBeLessThanOrEqual(layout!.width - 28);
+              });
+            }
+          });
+          EOF
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('e2e/visual-combat.spec.ts')
+          s=p.read_text().replace("renderer: 'vector-combat-v1'", "renderer: 'sprite-combat-v2'")
+          p.write_text(s)
+          PY
+      - run: npx prettier --write src/presentation/DevScene.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+      - run: npm run test:e2e
+      - run: npm run qa
+      - name: Commit implementation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/presentation/DevScene.ts e2e/visual-combat.spec.ts e2e/character-art.spec.ts
+          git commit -m "art: replace procedural combatants with 2D character assets"
+          git push origin HEAD:prd-02-playable-core
