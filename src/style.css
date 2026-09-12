@@ -14,15 +14,44 @@ body {
   font-family: Arial, sans-serif;
 }
 #app {
+  position: fixed;
+  inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   box-sizing: border-box;
 }
 canvas {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  max-height: none;
   touch-action: none;
+}
+
+#rotate-device {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  box-sizing: border-box;
+  text-align: center;
+  background: radial-gradient(circle at 50% 40%, #1b1552 0%, #07091d 60%, #03040d 100%);
+  color: #fff;
+  font: 700 22px/1.35 Arial, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  #app {
+    visibility: hidden;
+  }
+  #rotate-device {
+    display: flex;
+  }
 }
