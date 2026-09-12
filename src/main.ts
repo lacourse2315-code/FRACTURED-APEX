@@ -18,6 +18,11 @@ new Phaser.Game({
   height: 720,
   backgroundColor: '#080b1d',
   scene: [scene],
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 1280, height: 720 },
+  scale: {
+    mode: Phaser.Scale.EXPAND,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 1280,
+    height: 720,
+  },
   render: { antialias: true },
 });

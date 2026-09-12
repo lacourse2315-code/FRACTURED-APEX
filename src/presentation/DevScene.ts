@@ -53,6 +53,7 @@ export class DevScene extends Phaser.Scene {
 
   create(): void {
     const { width: w, height: h } = this.scale;
+    const hud = this.hudBounds(w, h);
     this.drawBackdrop(w, h);
     this.add
       .text(w / 2, 18, STRINGS.title, {
@@ -65,15 +66,19 @@ export class DevScene extends Phaser.Scene {
     this.add
       .text(w / 2, 52, STRINGS.subtitle, { fontFamily: 'Arial', fontSize: '12px', color: '#8fa9d8' })
       .setOrigin(0.5, 0);
-    this.stageText = this.add.text(24, 20, '', { fontFamily: 'Arial', fontSize: '16px', color: '#a9c7ff' });
+    this.stageText = this.add.text(hud.left + 24, 20, '', {
+      fontFamily: 'Arial',
+      fontSize: '16px',
+      color: '#a9c7ff',
+    });
     this.powerText = this.add
-      .text(w - 24, 20, '', { fontFamily: 'Arial', fontSize: '16px', align: 'right', color: '#ffd778' })
+      .text(hud.right - 24, 20, '', { fontFamily: 'Arial', fontSize: '16px', align: 'right', color: '#ffd778' })
       .setOrigin(1, 0);
-    this.makeMute(w);
+    this.makeMute(hud.right);
     this.makeActors(w, h);
-    this.makeHud(w, h);
+    this.makeHud(w, h, hud.left, hud.right);
     this.makeSpeedButtons(w, h);
-    this.makeNav(w, h);
+    this.makeNav(h, hud.left, hud.right);
     this.makeResultPanel(w, h);
     this.updateUi();
     this.scale.on('resize', () => this.scene.restart());
@@ -97,6 +102,12 @@ export class DevScene extends Phaser.Scene {
     this.sim.advance(delta, (dt) => events.push(...this.core.tick(dt)));
     for (const event of events) this.presentEvent(event);
     this.updateUi();
+  }
+
+  private hudBounds(w: number, h: number): { left: number; right: number } {
+    const hudWidth = Math.min(w, h * (16 / 9));
+    const left = (w - hudWidth) / 2;
+    return { left, right: left + hudWidth };
   }
 
   private drawBackdrop(w: number, h: number): void {
@@ -132,13 +143,30 @@ export class DevScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
   }
 
-  private makeHud(w: number, h: number): void {
-    this.heroHp = this.add.text(24, h * 0.24, '', { fontFamily: 'Arial', fontSize: '16px', color: '#8fffc1' });
+  private makeHud(w: number, h: number, hudLeft: number, hudRight: number): void {
+    this.heroHp = this.add.text(hudLeft + 24, h * 0.24, '', {
+      fontFamily: 'Arial',
+      fontSize: '16px',
+      color: '#8fffc1',
+    });
     this.enemyHp = this.add
-      .text(w - 24, h * 0.24, '', { fontFamily: 'Arial', fontSize: '16px', color: '#ff9caf', align: 'right' })
+      .text(hudRight - 24, h * 0.24, '', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        color: '#ff9caf',
+        align: 'right',
+      })
       .setOrigin(1, 0);
-    this.resolveText = this.add.text(24, h * 0.3, '', { fontFamily: 'Arial', fontSize: '15px', color: '#bda4ff' });
-    this.pyraText = this.add.text(24, h * 0.35, '', { fontFamily: 'Arial', fontSize: '14px', color: '#ffbd82' });
+    this.resolveText = this.add.text(hudLeft + 24, h * 0.3, '', {
+      fontFamily: 'Arial',
+      fontSize: '15px',
+      color: '#bda4ff',
+    });
+    this.pyraText = this.add.text(hudLeft + 24, h * 0.35, '', {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#ffbd82',
+    });
     this.skillText = this.add
       .text(w / 2, h * 0.69, '', {
         fontFamily: 'Arial',
@@ -148,12 +176,16 @@ export class DevScene extends Phaser.Scene {
         padding: { x: 12, y: 8 },
       })
       .setOrigin(0.5);
-    this.resourcesText = this.add.text(24, h - 112, '', { fontFamily: 'Arial', fontSize: '14px', color: '#dbe7ff' });
+    this.resourcesText = this.add.text(hudLeft + 24, h - 112, '', {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#dbe7ff',
+    });
   }
 
-  private makeMute(w: number): void {
+  private makeMute(hudRight: number): void {
     const mute = this.add
-      .text(w - 24, 52, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, {
+      .text(hudRight - 24, 52, this.state.settings.muted ? 'UNMUTE' : STRINGS.mute, {
         fontFamily: 'Arial',
         fontSize: '12px',
         backgroundColor: '#1b2343',
@@ -190,12 +222,12 @@ export class DevScene extends Phaser.Scene {
     });
   }
 
-  private makeNav(w: number, h: number): void {
+  private makeNav(h: number, hudLeft: number, hudRight: number): void {
     const labels = [STRINGS.battle, STRINGS.hero, STRINGS.forge, STRINGS.companions, STRINGS.rifts, STRINGS.more];
-    const cell = w / labels.length;
+    const cell = (hudRight - hudLeft) / labels.length;
     labels.forEach((label, i) => {
       const t = this.add
-        .text(cell * i + cell / 2, h - 34, label, {
+        .text(hudLeft + cell * i + cell / 2, h - 34, label, {
           fontFamily: 'Arial',
           fontSize: '13px',
           color: i < 2 ? '#fff' : '#9aa7c7',
@@ -204,8 +236,8 @@ export class DevScene extends Phaser.Scene {
         })
         .setOrigin(0.5)
         .setName(`nav-${label.toLowerCase()}`);
-      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel(w, h));
-      else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, w, h));
+      if (label === STRINGS.hero) bindTap(t, () => this.showHeroPanel((hudLeft + hudRight) / 2, h));
+      else if (i > 1) bindTap(t, () => this.toast(`${label} — ${STRINGS.locked}`, (hudLeft + hudRight) / 2, h));
     });
   }
 
